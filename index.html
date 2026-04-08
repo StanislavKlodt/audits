@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRO-Аудит · van-kovka.ru</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Manrope:wght@400;600;800&display=swap');
+:root {
+  --bg: #08080d; --card: #111118; --border: #1e1e2e; --text: #d4d4e8;
+  --muted: #6b6b8a; --white: #f0f0ff; --accent: #818cf8; --accentD: #818cf822;
+  --red: #f87171; --redD: #f8717115; --orange: #fbbf24; --orangeD: #fbbf2415;
+  --green: #34d399; --greenD: #34d39915; --cyan: #22d3ee; --cyanD: #22d3ee15;
+  --purple: #a78bfa; --pink: #f472b6; --teal: #2dd4bf;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: 'Manrope', system-ui, sans-serif; line-height: 1.6; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #818cf810, #f8717108); border-bottom: 1px solid var(--border); padding: 20px 24px; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; max-width: 1100px; margin: 0 auto; }
+.header h1 { font-size: 28px; font-weight: 900; color: var(--white); margin-top: 2px; }
+.header .sub { font-size: 11px; color: var(--accent); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+.header .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stats { display: flex; gap: 8px; }
+.stat { text-align: center; padding: 6px 16px; border-radius: 8px; }
+.stat .n { font-size: 20px; font-weight: 900; }
+.stat .l { font-size: 9px; font-weight: 700; letter-spacing: .06em; }
+
+/* Tabs */
+.tabs { display: flex; border-bottom: 1px solid var(--border); max-width: 1100px; margin: 0 auto; overflow-x: auto; }
+.tab { padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; font-family: inherit; transition: all .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab .badge { font-size: 10px; background: var(--card); padding: 1px 7px; border-radius: 10px; margin-left: 5px; }
+.tab.active .badge { background: var(--accentD); color: var(--accent); }
+
+/* Content */
+.content { padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+.hidden { display: none !important; }
+
+/* Page selector */
+.page-btns { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.page-btn { padding: 7px 16px; font-size: 12px; font-weight: 700; background: var(--card); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: inherit; transition: all .15s; }
+.page-btn:hover { background: var(--border); }
+.page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* URL bar */
+.url-bar { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; background: var(--card); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 14px; }
+
+/* Problems */
+.problem { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; }
+.problem .text { font-size: 12px; line-height: 1.6; }
+.sev { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 3px; letter-spacing: .08em; white-space: nowrap; flex-shrink: 0; }
+.sev-c { color: var(--red); background: var(--redD); }
+.sev-h { color: var(--orange); background: var(--orangeD); }
+.sev-m { color: var(--cyan); background: var(--cyanD); }
+
+/* Wireframes */
+.wires { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+.wire { flex: 1; min-width: 300px; }
+.wire-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+.wire-frame { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
+.wire-chrome { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; }
+.wire-bar { flex: 1; height: 14px; background: var(--card); border-radius: 4px; margin-left: 8px; }
+
+/* Wireframe block */
+.wf-block { border-radius: 6px; padding: 0 10px; display: flex; align-items: center; gap: 6px; margin-bottom: 3px; position: relative; overflow: hidden; }
+.wf-block .label { font-size: 11px; }
+.wf-block.problem-block { border-color: rgba(248,113,113,.3) !important; }
+.wf-block.problem-block .label { color: var(--red); font-weight: 600; }
+.wf-block .warn { position: absolute; right: 8px; font-size: 9px; color: var(--red); font-weight: 700; }
+
+/* Tag */
+.tag { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 3px; letter-spacing: .04em; white-space: nowrap; flex-shrink: 0; }
+
+/* Hero comparison */
+.hero-cmp { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+.hero-btns { display: flex; gap: 8px; margin-bottom: 12px; }
+.hero-btn { padding: 5px 14px; font-size: 11px; font-weight: 700; border-radius: 5px; cursor: pointer; font-family: inherit; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all .15s; }
+.hero-btn.active-now { background: var(--redD); color: var(--red); border-color: rgba(248,113,113,.3); }
+.hero-btn.active-new { background: var(--greenD); color: var(--green); border-color: rgba(52,211,153,.3); }
+.hero-text { font-size: 13px; line-height: 1.8; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; padding: 12px; background: var(--bg); border-radius: 6px; }
+.hero-text-now { color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+.hero-text-new { color: var(--green); border: 1px solid rgba(52,211,153,.2); }
+
+/* Bottleneck */
+.bn-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 8px; display: flex; gap: 14px; }
+.bn-num { font-size: 20px; font-weight: 900; color: var(--border); min-width: 28px; text-align: right; line-height: 1; }
+.bn-title { font-size: 14px; font-weight: 800; color: var(--white); }
+.bn-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 4px 0 8px; }
+.bn-fix { font-size: 12px; color: var(--green); line-height: 1.5; padding: 6px 10px; background: var(--greenD); border-radius: 5px; border-left: 3px solid var(--green); }
+
+/* TODO */
+.section-title { font-size: 15px; font-weight: 800; margin-bottom: 12px; }
+.todo-row { display: grid; grid-template-columns: 1fr 90px 80px 130px; gap: 8px; align-items: center; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; margin-bottom: 4px; }
+.todo-row .what { font-weight: 600; }
+.content-task { padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.content-task .num { color: var(--purple); font-weight: 800; }
+
+/* Component library */
+.comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.comp-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.comp-card .title { font-size: 13px; font-weight: 700; color: var(--white); margin: 6px 0 4px; }
+.comp-card .desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+/* Overview cards */
+.overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.ov-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.ov-card .label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+.ov-card p { font-size: 13px; line-height: 1.7; }
+.finding { background: linear-gradient(135deg, rgba(248,113,113,.06), rgba(129,140,248,.06)); border: 1px solid rgba(248,113,113,.2); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.finding h3 { font-size: 16px; font-weight: 800; color: var(--red); margin-bottom: 10px; }
+.finding p { font-size: 14px; line-height: 1.8; }
+.segment { font-size: 12px; padding: 5px 10px; background: var(--accentD); border-radius: 6px; border-left: 3px solid var(--accent); margin-bottom: 4px; }
+
+@media (max-width: 700px) {
+  .wires { flex-direction: column; }
+  .todo-row { grid-template-columns: 1fr; gap: 4px; }
+  .header-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-row">
+    <div>
+      <div class="sub">CRO-аудит многостраничного сайта</div>
+      <h1>van-kovka.ru</h1>
+      <div class="desc">Кованые элементы и изделия на заказ · Подольск · 5 страниц · 21 рекомендация</div>
+    </div>
+    <div class="stats">
+      <div class="stat" style="background:var(--redD)"><div class="n" style="color:var(--red)">5</div><div class="l" style="color:var(--red)">КРИТ</div></div>
+      <div class="stat" style="background:var(--orangeD)"><div class="n" style="color:var(--orange)">8</div><div class="l" style="color:var(--orange)">ВЫСОК</div></div>
+      <div class="stat" style="background:var(--cyanD)"><div class="n" style="color:var(--cyan)">8</div><div class="l" style="color:var(--cyan)">СРЕДН</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs" id="tabs">
+  <button class="tab active" data-tab="overview">Обзор</button>
+  <button class="tab" data-tab="pages">Аудит страниц <span class="badge">21</span></button>
+  <button class="tab" data-tab="bn">Узкие горлышки <span class="badge">9</span></button>
+  <button class="tab" data-tab="todo">ТЗ на улучшения <span class="badge">16</span></button>
+  <button class="tab" data-tab="lib">Компоненты</button>
+</div>
+
+<!-- ============ OVERVIEW ============ -->
+<div class="content" id="t-overview">
+  <div class="overview-grid">
+    <div class="ov-card">
+      <div class="label">Бизнес</div>
+      <p><strong>ООО «Ван-Упак» / бренд «Ван-Ковка»</strong> — производство и продажа кованых элементов (балясины, вставки, виноград, панели) + изготовление на заказ (ворота, лестницы, ограждения). Подольск, МО. Доставка по РФ через ПЭК, Деловые линии, СДЭК. Скидки от 10 000₽.</p>
+    </div>
+    <div class="ov-card">
+      <div class="label">Целевая аудитория (AJTBD)</div>
+      <div class="segment">A: Сварщик/DIY — собирает ограждения сам, ищет элементы по артикулам, важна цена</div>
+      <div class="segment">B: Кузнец/мастерская — закупает оптом, нужны скидки и ассортимент</div>
+      <div class="segment">C: Частный заказчик — хочет ворота/лестницу под ключ, ищет исполнителя</div>
+      <div class="segment">D: Дизайнер/архитектор — подбирает декор для проекта, нужны размеры и стиль</div>
+    </div>
+    <div class="ov-card">
+      <div class="label">Охват аудита</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Главная</span><span style="color:var(--muted)">5 проблем</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Категория (балясины)</span><span style="color:var(--muted)">4 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Ворота (на заказ)</span><span style="color:var(--muted)">5 проблем</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>О компании</span><span style="color:var(--muted)">4 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Как заказать</span><span style="color:var(--muted)">3 проблемы</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="finding">
+    <h3>Главная находка</h3>
+    <p>На сайте <strong>два разных бизнеса</strong>, которые не разделены: дешёвые элементы для сварщиков (от 23₽) и дорогие изделия на заказ (ворота до 181 000₽). Покупатель ворот за 100К попадает в интерфейс интернет-магазина с кнопкой «В корзину» — <strong>как будто покупает балясину за 400₽</strong>.</p>
+    <p style="margin-top:12px">При этом на сайте <strong>нет ни одного фото установленной работы</strong> — только каталожные снимки элементов на белом фоне. Нет формы консультации, нет портфолио, нет процесса заказа для дорогих изделий. Клиент с бюджетом 100-180К не оставит заявку через «корзину».</p>
+  </div>
+  <!-- Homepage screenshot -->
+  <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px">Превью главной страницы</div>
+  <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--card);margin-bottom:20px">
+    <div style="padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
+      <div style="width:6px;height:6px;border-radius:50%;background:#ef4444"></div><div style="width:6px;height:6px;border-radius:50%;background:#fbbf24"></div><div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div>
+      <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-left:4px">van-kovka.ru</span>
+    </div>
+    <div style="position:relative;min-height:180px;background:#1a1a24">
+      <img src="https://image.thum.io/get/width/1200/crop/600/https://van-kovka.ru/" alt="Скриншот главной" style="width:100%;display:block;opacity:0;transition:opacity .5s" onload="this.style.opacity=1;this.nextElementSibling.style.display='none'" onerror="this.nextElementSibling.innerHTML='Скриншот не загрузился'" />
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Загрузка...</div>
+    </div>
+  </div>
+</div>
+<div class="content hidden" id="t-pages"></div>
+
+<!-- ============ BOTTLENECKS ============ -->
+<div class="content hidden" id="t-bn"></div>
+
+<!-- ============ TODO ============ -->
+<div class="content hidden" id="t-todo"></div>
+
+<!-- ============ COMPONENTS ============ -->
+<div class="content hidden" id="t-lib"></div>
+
+<script>
+// --- DATA ---
+const COMP_COLORS = {
+  HERO:'#818cf8', PROOF:'#22d3ee', PORTFOLIO:'#a78bfa', TRUST:'#34d399',
+  QUIZ:'#fbbf24', FAQ:'#f472b6', NEXT:'#2dd4bf', CROSS:'#c084fc',
+  ID:'#fb923c', PRICE:'#4ade80', PROC:'#60a5fa', WEAK:'#f87171',
+  OK:'#6b6b8a', BLOG:'#6b6b8a', SEO:'#f87171', NAV:'#6b6b8a',
+  FILTER:'#22d3ee', CATALOG:'#818cf8'
+};
+
+const pages = [
+  { id:'home', title:'Главная', url:'van-kovka.ru/',
+    problems: [
+      {l:'c',t:'H1 «КОВАНЫЕ ИЗДЕЛИЯ» — ноль позиционирования. Не отвечает на «кто вы, почему здесь покупать, чем лучше конкурентов»'},
+      {l:'c',t:'Хаотичная структура: новинки → распродажа → новости → промо → 30+ категорий → SEO-текст. Нет логики принятия решения'},
+      {l:'c',t:'Нет портфолио установленных работ — ни одного фото ворот, лестниц, ограждений на объекте'},
+      {l:'h',t:'30+ категорий без иерархии и группировки — элементы и готовые изделия в одном ряду. Паралич выбора'},
+      {l:'h',t:'Новости от марта 2024 — сайт выглядит заброшенным, подрывает доверие'},
+    ],
+    before: [
+      {tag:'HERO',label:'«КОВАНЫЕ ИЗДЕЛИЯ» — пустой заголовок без смысла',h:64,p:1},
+      {tag:'OK',label:'Новинки (2 балясины)',h:40},
+      {tag:'OK',label:'Распродажа (3 товара)',h:40},
+      {tag:'WEAK',label:'Новости от марта 2024',h:36,p:1},
+      {tag:'WEAK',label:'Промо «Кованый виноград по низкой цене»',h:36,p:1},
+      {tag:'SEO',label:'Текст о художественной ковке',h:44,p:1},
+      {tag:'OK',label:'Логотипы 3 брендов (Samen, Glanzepol, ХК)',h:32},
+      {tag:'WEAK',label:'30+ плиток категорий без иерархии',h:56,p:1},
+      {tag:'OK',label:'Лидеры продаж (4 товара)',h:44},
+      {tag:'SEO',label:'Ещё SEO-текст о популярности ковки',h:40,p:1},
+      {tag:'OK',label:'Футер: контакты, карта',h:36},
+    ],
+    after: [
+      {tag:'HERO',label:'Кто мы + 2 CTA: «Каталог элементов» / «Заказать изделие»',h:64},
+      {tag:'PROOF',label:'Подольск • Доставка по РФ • от 23₽ • Скидки от 10К',h:36},
+      {tag:'ID',label:'Два пути: «Элементы для сварки» / «Ворота и лестницы на заказ»',h:48},
+      {tag:'PORTFOLIO',label:'6-8 фото установленных ворот/лестниц + цены',h:56},
+      {tag:'PRICE',label:'4 основных категории с ценами «от»',h:48},
+      {tag:'TRUST',label:'Отзывы + 7 дн/нед + бесплатная упаковка',h:44},
+      {tag:'PROC',label:'5 шагов: выбор → заказ → оплата → доставка → получение',h:44},
+      {tag:'FAQ',label:'5 ключевых вопросов',h:36},
+      {tag:'NEXT',label:'Форма: расчёт комплекта / консультация',h:44},
+    ],
+    heroNow:'«КОВАНЫЕ ИЗДЕЛИЯ»\n\n(Просто заголовок. Без подзаголовка,\nбез CTA, без позиционирования)\n\nМАГАЗИН КОВКИ - Лидеры продаж',
+    heroNew:'«Кованые элементы и изделия на заказ\nс доставкой по России»\n\nОт балясин за 23₽ до ворот за 180 000₽.\nСобственное производство в Подольске.\nСкидки от 10 000₽.\n\nCTA: Каталог элементов\nCTA: Заказать ворота / лестницу',
+  },
+  { id:'category', title:'Категория (балясины)', url:'van-kovka.ru/element/balyasiny/',
+    problems: [
+      {l:'h',t:'Нет описания категории — сразу каталог без объяснения что это, зачем, как выбирать'},
+      {l:'h',t:'Нет фильтров (по цене, размеру, типу) — 80 товаров на 5 страницах, невозможно найти нужное'},
+      {l:'m',t:'Нет фото в контексте — все элементы на белом фоне, непонятно как будет выглядеть в изделии'},
+      {l:'m',t:'CTA только «В корзину» — нет «Рассчитать комплект» или «Помочь подобрать»'},
+    ],
+    before: [
+      {tag:'NAV',label:'Хлебные крошки: Главная > Кованые элементы > Балясины',h:28},
+      {tag:'WEAK',label:'Сетка товаров БЕЗ описания категории',h:44,p:1},
+      {tag:'CATALOG',label:'16 карточек: артикул + цена + фото на белом фоне',h:64},
+      {tag:'OK',label:'Пагинация (5 стр, 80 товаров)',h:28},
+      {tag:'OK',label:'Боковые блоки: новинки, распродажа',h:40},
+    ],
+    after: [
+      {tag:'HERO',label:'Описание: что такое балясины + для чего + от 360₽',h:56},
+      {tag:'PROOF',label:'80 моделей • от 360₽ • Доставка по РФ',h:32},
+      {tag:'FILTER',label:'Фильтры: цена, размер, тип (с виноградом, композиционные)',h:40},
+      {tag:'CATALOG',label:'Каталог с фото в контексте (на перилах, ограждениях)',h:64},
+      {tag:'CROSS',label:'Смежные: вставки в балясины, начальные столбы',h:36},
+      {tag:'FAQ',label:'3 вопроса: размеры, крепление, отделка',h:32},
+      {tag:'NEXT',label:'Не нашли? Поможем подобрать — форма',h:40},
+    ],
+    heroNow:'(Описание категории отсутствует)\n\nСразу сетка товаров:\nБалясина 11.002 — 470₽\nБалясина 5379 — 400₽\n...\n\nCTA: В корзину',
+    heroNew:'«Кованые балясины — 80 моделей от 360₽»\n\nДля лестниц, ограждений, перил и балконов.\nШтампованная сталь. Легко крепятся сваркой.\n\nФильтры: по цене | по размеру | по стилю\n\nCTA: Рассчитать комплект на лестницу',
+  },
+  { id:'gates', title:'Ворота (на заказ)', url:'van-kovka.ru/element/hudozhestvennaya-kovka/vorota/',
+    problems: [
+      {l:'c',t:'Ворота от 77 000₽ продаются через кнопку «В корзину» — как товар за 100₽. Для изделия за 100-180К нужен диалог, не корзина'},
+      {l:'c',t:'Нет формы консультации / расчёта — клиент с бюджетом 100К+ не знает как связаться для обсуждения проекта'},
+      {l:'h',t:'Нет портфолио установленных ворот — только каталожные фото. Клиент не видит результат на объекте'},
+      {l:'h',t:'Размеры «под заказ», вес «по расчету» — ноль конкретики. Непонятно что входит в цену'},
+      {l:'m',t:'Нет отзывов клиентов, заказавших ворота. Нет кейсов'},
+    ],
+    before: [
+      {tag:'NAV',label:'Хлебные крошки: Главная > Ковка > Ворота',h:28},
+      {tag:'WEAK',label:'Сетка 16 ворот: фото + цена + «В корзину»',h:64,p:1},
+      {tag:'OK',label:'Карточки: артикул, цена 77-181К, отделка',h:48},
+      {tag:'OK',label:'Пагинация (2 стр, 26 моделей)',h:28},
+    ],
+    after: [
+      {tag:'HERO',label:'«Кованые ворота на заказ — от 77 000₽» + CTA расчёт',h:64},
+      {tag:'PROOF',label:'26 моделей • Покраска • Доставка • Монтаж',h:36},
+      {tag:'PORTFOLIO',label:'Фото ворот НА ОБЪЕКТАХ + цены + размеры',h:56},
+      {tag:'PRICE',label:'Что влияет на цену: размер, сложность, покраска, монтаж',h:44},
+      {tag:'PROC',label:'Замер → дизайн → изготовление → покраска → доставка',h:44},
+      {tag:'TRUST',label:'Отзывы + гарантия + виды отделки (порошок, патина)',h:40},
+      {tag:'FAQ',label:'5 вопросов: сроки, монтаж, покраска, доставка',h:36},
+      {tag:'NEXT',label:'Форма: размеры + фото + стиль → расчёт за 1 день',h:44},
+      {tag:'CROSS',label:'Лестницы, ограждения, калитки',h:32},
+    ],
+    heroNow:'«Художественная ковка на заказ»\n\nСетка товаров:\nКованые ворота AV-026 — 99 000₽\nКованые ворота AV-023 — 123 000₽\n...\n\nCTA: В корзину  |  Купить',
+    heroNew:'«Кованые ворота на заказ —\nот 77 000₽ с доставкой по РФ»\n\nПорошковая покраска, патина, нитроэмаль.\nРазмер под ваш проём.\n26 готовых моделей + индивидуальный дизайн.\n\nCTA: Рассчитать стоимость моих ворот\nCTA: Посмотреть портфолио',
+  },
+  { id:'about', title:'О компании', url:'van-kovka.ru/about/',
+    problems: [
+      {l:'h',t:'Философский текст о промышленной ковке вместо конкретных фактов: опыт, количество заказов, география'},
+      {l:'h',t:'Отзывы — 4 скриншота, не интегрированы в страницу. Нет текстовых отзывов, нет имён'},
+      {l:'m',t:'Нет команды, нет фото производства в процессе, нет сертификатов'},
+      {l:'m',t:'5 фото компании спрятаны внизу страницы — их почти никто не видит'},
+    ],
+    before: [
+      {tag:'WEAK',label:'Текст: промышленная ковка vs ручная, «конструктор для взрослых»',h:56,p:1},
+      {tag:'OK',label:'4 скриншота отзывов (картинки)',h:44},
+      {tag:'OK',label:'5 фото компании (внизу страницы)',h:44},
+    ],
+    after: [
+      {tag:'HERO',label:'«Ван-Ковка — кованые элементы и изделия с доставкой по РФ»',h:56},
+      {tag:'PROOF',label:'N лет • X товаров в каталоге • Доставка по РФ • Скидки оптовикам',h:36},
+      {tag:'PORTFOLIO',label:'Фото производства: цех, оборудование, процесс',h:52},
+      {tag:'TRUST',label:'Отзывы текстом + бренды (Samen, Glanzepol) + реквизиты',h:44},
+      {tag:'PROC',label:'Как работаем: от заказа до доставки',h:40},
+      {tag:'NEXT',label:'Связаться / перейти в каталог',h:36},
+    ],
+    heroNow:'«КОМПАНИЯ "ВАН-КОВКА"»\n\nТекст: «Современная промышленная ковка\nотличается от ручной превосходной\nповторяемостью...»\n\n«Конструктор для взрослых»\n«Демократичная цена»',
+    heroNew:'«Ван-Ковка — производство и продажа\nкованых элементов с 2016 года»\n\n200+ моделей в каталоге.\nСкидки оптовикам: 5% от 10К, 10% от 45К.\nБесплатная упаковка и доставка до ТК.\n\nCTA: Перейти в каталог\nCTA: Связаться с менеджером',
+  },
+  { id:'order', title:'Как заказать', url:'van-kovka.ru/zakaz/',
+    problems: [
+      {l:'h',t:'Текстовая стена без визуализации — 4 способа заказа описаны сплошным текстом'},
+      {l:'m',t:'Нет графики, иконок, нумерованных шагов — выглядит как инструкция к принтеру'},
+      {l:'m',t:'Нет информации о сроках изготовления, способах оплаты, условиях возврата'},
+    ],
+    before: [
+      {tag:'WEAK',label:'Текст: 4 способа заказа (сайт, email, телефон, магазин)',h:56,p:1},
+      {tag:'OK',label:'Контактная информация',h:32},
+    ],
+    after: [
+      {tag:'HERO',label:'«Как заказать» + быстрый CTA «Оформить заказ»',h:48},
+      {tag:'PROC',label:'4 способа визуально: иконки + шаги + сроки',h:52},
+      {tag:'PRICE',label:'Скидки: 5% от 10К, 10% от 45К — визуальная таблица',h:40},
+      {tag:'TRUST',label:'Оплата: способы. Возврат: условия. Гарантия',h:40},
+      {tag:'FAQ',label:'Как оплатить? Сколько ждать? Можно вернуть?',h:36},
+      {tag:'NEXT',label:'Не можете оформить? Поможем — форма/звонок',h:40},
+    ],
+    heroNow:'«Как заказать»\n\nЗАКАЗ ЧЕРЕЗ САЙТ:\nВыберите товар, добавьте в корзину...\n\nЗАКАЗ ПО EMAIL:\nОтправьте на vankovka@yandex.ru...\n\nЗАКАЗ ПО ТЕЛЕФОНУ:\n+7 (495) 134-55-06...\n\nЗАКАЗ В МАГАЗИНЕ:\n142116, М.О., г.о. Подольск...',
+    heroNew:'«4 способа сделать заказ»\n\n1. На сайте — добавьте в корзину и оформите\n2. WhatsApp — напишите артикулы\n3. Телефон — позвоните, поможем подобрать\n4. Шоурум — приезжайте в Подольск\n\nСроки: наличие — 1-3 дня, на заказ — 7-14 дней\nОплата: карта, расчётный счёт, наличные\n\nCTA: Оформить заказ  |  Написать в WhatsApp',
+  },
+];
+
+const bottlenecks = [
+  {l:'c',title:'Два бизнеса без разделения',desc:'Дешёвые элементы (от 23₽) и дорогие изделия на заказ (до 181 000₽) продаются одинаково — через «корзину». Покупатель ворот за 100К не понимает, как начать диалог.',fix:'Разделить каталог на 2 ветки: «Элементы для сварки» (e-commerce) и «Изделия на заказ» (лид-форма + портфолио). Разные CTA, разный UX.'},
+  {l:'c',title:'Нет форм консультации',desc:'Для ворот, лестниц, ограждений (77-181К₽) единственный способ связаться — телефон или email в футере. Нет формы расчёта на страницах товаров.',fix:'Добавить форму «Рассчитать стоимость» на каждую страницу изделий на заказ. Поля: размеры, стиль, фото (опционально), телефон.'},
+  {l:'c',title:'Нет портфолио установленных работ',desc:'Ни одного фото ворот/лестниц/ограждений на реальном объекте. Только каталожные фото элементов на белом фоне.',fix:'Сфотографировать 15-20 установленных проектов. Создать раздел «Портфолио» с фото, ценами, описанием.'},
+  {l:'h',title:'30+ категорий без иерархии',desc:'Балясины, виноград, вставки, панели, ворота, лестницы — всё в одном списке. Элементы и готовые изделия не разделены.',fix:'Группировка: «Элементы» (балясины, вставки, виноград, панели) + «Изделия» (ворота, лестницы, ограждения) + «Декор» (Glanzepol).'},
+  {l:'h',title:'Нет фильтров в каталоге',desc:'80 балясин на 5 страницах, 80 вставок на 5 страницах — без фильтров по цене, размеру, типу.',fix:'Добавить фильтры: цена, размер, тип (для балясин: композиционные, с виноградом, простые).'},
+  {l:'h',title:'Пустой HERO на главной',desc:'H1 «КОВАНЫЕ ИЗДЕЛИЯ» — ноль информации. Нет подзаголовка, нет CTA, нет позиционирования.',fix:'H1: «Кованые элементы и изделия на заказ с доставкой по России». Подзаголовок: УТП. 2 CTA.'},
+  {l:'h',title:'CTA только «В корзину» везде',desc:'Даже для ворот за 181 000₽ единственный CTA — «В корзину». Нет квиза, калькулятора, формы расчёта.',fix:'Для элементов — оставить корзину. Для изделий — заменить на «Рассчитать стоимость» + «Позвонить».'},
+  {l:'m',title:'Сайт выглядит заброшенным',desc:'Новости от марта 2024. Дизайн устаревший. Нет адаптивности для мобильных.',fix:'Убрать блок новостей или обновить. Проверить мобильную версию.'},
+  {l:'m',title:'Страница «О компании» не продаёт доверие',desc:'Философский текст о промышленной ковке вместо фактов. Отзывы — скриншоты. Фото спрятаны.',fix:'Переписать: факты, цифры, процесс. Отзывы текстом. Фото производства наверх.'},
+];
+
+const compLib = [
+  ['HERO','Первый экран','Позиционирование + главный CTA. H1 повторяет поисковый интент. 2 CTA: каталог + заказ.'],
+  ['PROOF','Полоса доверия','3-5 коротких фактов в строку. Без воды. Под Hero на каждой ключевой странице.'],
+  ['PORTFOLIO','Портфолио + цены','Реальные работы с ценами. Фото НА ОБЪЕКТАХ, а не на белом фоне. CTA «хочу так же».'],
+  ['ID','Идентификация','Два пути: элементы для DIY / изделия на заказ. Помочь посетителю выбрать свой маршрут.'],
+  ['PRICE','Ценообразование','«Что влияет на цену» или «от X₽». Таблица скидок. Прозрачность снимает страх.'],
+  ['TRUST','Снятие рисков','Отзывы текстом, гарантия, реквизиты ООО, бренды-партнёры. Рядом с моментом решения.'],
+  ['QUIZ','Подбор / квиз','3-5 вопросов: что делаете? какой размер? стиль? → расчёт комплекта элементов.'],
+  ['PROC','Этапы работы','Что будет после заказа: 5 шагов. Для элементов и для изделий — разные процессы.'],
+  ['FAQ','Частые вопросы','6-8 вопросов: доставка, оплата, возврат, сроки, крепление. На каждой категории.'],
+  ['NEXT','Следующий шаг','Форма расчёта + WhatsApp + телефон. «Поможем подобрать за 15 минут».'],
+  ['CROSS','Кросс-продажа','Смежные категории: балясины → вставки, ворота → калитки, лестницы → перила.'],
+  ['FILTER','Фильтры каталога','По цене, размеру, типу, стилю. Обязательны для каталогов 50+ товаров.'],
+];
+
+// --- RENDER FUNCTIONS ---
+function makeTag(type) {
+  const c = COMP_COLORS[type] || '#6b6b8a';
+  return `<span class="tag" style="color:${c};background:${c}18">${type}</span>`;
+}
+
+function makeSev(l) {
+  const m = {c:['sev-c','КРИТ'],h:['sev-h','ВЫСОК'],m:['sev-m','СРЕДН']};
+  const [cls,label] = m[l]||['','—'];
+  return `<span class="sev ${cls}">${label}</span>`;
+}
+
+function makeWfBlock(b) {
+  const c = COMP_COLORS[b.tag] || '#6b6b8a';
+  const isProblem = b.p;
+  const bg = isProblem ? 'var(--redD)' : (c+'0a');
+  const border = isProblem ? 'rgba(248,113,113,.3)' : (c+'30');
+  return `<div class="wf-block${isProblem?' problem-block':''}" style="height:${b.h||48}px;background:${bg};border:1px solid ${border};border-left:3px solid ${isProblem?'var(--red)':c}">
+    ${b.tag ? makeTag(b.tag) : ''}
+    <span class="label">${b.label}</span>
+    ${isProblem ? '<span class="warn">!</span>' : ''}
+  </div>`;
+}
+
+function makeWire(blocks, title) {
+  return `<div class="wire">
+    <div class="wire-title">${title}</div>
+    <div class="wire-frame">
+      <div class="wire-chrome">
+        <div class="dot" style="background:#ef4444"></div>
+        <div class="dot" style="background:#fbbf24"></div>
+        <div class="dot" style="background:#22c55e"></div>
+        <div class="wire-bar"></div>
+      </div>
+      ${blocks.map(makeWfBlock).join('')}
+    </div>
+  </div>`;
+}
+
+// --- RENDER PAGES TAB ---
+let activePage = 'home';
+let heroView = 'now';
+
+function renderPages() {
+  const el = document.getElementById('t-pages');
+  const p = pages.find(x=>x.id===activePage);
+  el.innerHTML = `
+    <div class="page-btns">${pages.map(pg=>`<button class="page-btn${pg.id===activePage?' active':''}" data-pg="${pg.id}">${pg.title} <span style="opacity:.5">(${pg.problems.length})</span></button>`).join('')}</div>
+    <div class="url-bar mono">https://${p.url} <a href="https://${p.url}" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:8px">открыть</a></div>
+    <div class="screenshot-wrap" style="margin-bottom:16px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--card)">
+      <div style="padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
+        <div class="dot" style="background:#ef4444"></div><div class="dot" style="background:#fbbf24"></div><div class="dot" style="background:#22c55e"></div>
+        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-left:4px">https://${p.url}</span>
+      </div>
+      <div style="position:relative;min-height:200px;background:#1a1a24">
+        <img
+          src="https://image.thum.io/get/width/1200/crop/700/https://${p.url}"
+          alt="Скриншот ${p.title}"
+          style="width:100%;display:block;opacity:0;transition:opacity .5s"
+          onload="this.style.opacity=1;this.nextElementSibling.style.display='none'"
+          onerror="this.style.display='none';this.nextElementSibling.innerHTML='<div style=padding:40px;text-align:center;color:#6b6b8a>Скриншот не загрузился. <a href=https://${p.url} target=_blank style=color:#818cf8>Открыть сайт</a></div>'"
+        />
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center">
+          <div style="color:var(--muted);font-size:12px">Загрузка скриншота...</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:14px;font-weight:800;color:var(--red);margin-bottom:8px">Почему может не конвертить</div>
+    ${p.problems.map(pr=>`<div class="problem">${makeSev(pr.l)}<span class="text">${pr.t}</span></div>`).join('')}
+    <div class="wires">
+      ${makeWire(p.before,'Как сейчас')}
+      ${makeWire(p.after,'Новая структура')}
+    </div>
+    <div class="hero-cmp">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">СРАВНЕНИЕ HERO-БЛОКА</div>
+      <div class="hero-btns">
+        <button class="hero-btn ${heroView==='now'?'active-now':''}" data-hv="now">HERO сейчас</button>
+        <button class="hero-btn ${heroView==='new'?'active-new':''}" data-hv="new">HERO предложение</button>
+      </div>
+      <div class="hero-text mono ${heroView==='now'?'hero-text-now':'hero-text-new'}">${heroView==='now'?p.heroNow:p.heroNew}</div>
+    </div>
+  `;
+  el.querySelectorAll('.page-btn').forEach(btn=>{
+    btn.onclick = ()=>{ activePage=btn.dataset.pg; heroView='now'; renderPages(); };
+  });
+  el.querySelectorAll('.hero-btn').forEach(btn=>{
+    btn.onclick = ()=>{ heroView=btn.dataset.hv; renderPages(); };
+  });
+}
+
+// --- RENDER BOTTLENECKS ---
+function renderBn() {
+  document.getElementById('t-bn').innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:16px">Узкие горлышки — приоритизированный список</div>
+    ${bottlenecks.map((b,i)=>`<div class="bn-item">
+      <div class="bn-num">${i+1}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">${makeSev(b.l)}<span class="bn-title">${b.title}</span></div>
+        <div class="bn-desc">${b.desc}</div>
+        <div class="bn-fix"><strong>Решение:</strong> ${b.fix}</div>
+      </div>
+    </div>`).join('')}`;
+}
+
+// --- RENDER TODO ---
+function renderTodo() {
+  const quick = [
+    ['Заменить H1 на главной: позиционирование + 2 CTA','Главная','1 день','+20-30% глубина','green'],
+    ['PROOF BAR под hero на каждую ключевую страницу','Все','1 день','+10-15% доверие','green'],
+    ['Убрать/скрыть блок новостей 2024 года','Главная','1 час','убрать негатив','green'],
+    ['Добавить форму «Рассчитать стоимость» на ворота/лестницы','Изделия','1-2 дня','+20-40% лиды','green'],
+    ['Оформить отзывы текстом (вместо скриншотов)','О компании','1 день','+15% доверие','green'],
+    ['Добавить WhatsApp-кнопку на все страницы','Все','2 часа','+10-20% контакты','green'],
+  ];
+  const struct = [
+    ['Разделить каталог: «Элементы» vs «Изделия на заказ»','Структура','3-5 дн','Главный драйвер','orange'],
+    ['Добавить фильтры в каталог (цена, размер, тип)','Каталог','3-5 дн','UX каталога','orange'],
+    ['Создать раздел «Портфолио» с фото на объектах','Новая стр','1-2 нед','+30-50% конверсия','orange'],
+    ['Переработать «Как заказать»: визуализация + сроки + оплата','Стр заказа','2-3 дн','снижение трения','orange'],
+    ['Добавить описания категорий для SEO','Каталог','3-5 дн','SEO + UX','orange'],
+  ];
+  const content = [
+    'Фотосъёмка 15-20 установленных ворот, лестниц, ограждений на реальных объектах',
+    '3-5 кейсов: задача клиента → решение → фото → отзыв',
+    'Фото/видео производства и склада (процесс работы)',
+    'Фото элементов в контексте: балясины на перилах, вставки в ограждениях',
+    'Текстовые отзывы от клиентов с именами и фото (заменить скриншоты)',
+  ];
+  document.getElementById('t-todo').innerHTML = `
+    <div class="section-title" style="color:var(--green)">Быстрые правки (1-3 дня)</div>
+    ${quick.map(f=>`<div class="todo-row"><span class="what">${f[0]}</span><span style="color:var(--muted)">${f[1]}</span><span style="color:var(--cyan)">${f[2]}</span><span style="color:var(--${f[4]});font-weight:700">${f[3]}</span></div>`).join('')}
+    <div class="section-title" style="color:var(--orange);margin-top:24px">Структурные изменения (1-2 недели)</div>
+    ${struct.map(f=>`<div class="todo-row"><span class="what">${f[0]}</span><span style="color:var(--muted)">${f[1]}</span><span style="color:var(--cyan)">${f[2]}</span><span style="color:var(--${f[4]});font-weight:700">${f[3]}</span></div>`).join('')}
+    <div class="section-title" style="color:var(--purple);margin-top:24px">Контент (участие клиента)</div>
+    ${content.map((t,i)=>`<div class="content-task"><span class="num">${i+1}</span><span>${t}</span></div>`).join('')}`;
+}
+
+// --- RENDER COMPONENTS ---
+function renderLib() {
+  document.getElementById('t-lib').innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px">Библиотека конверсионных компонентов</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Стандартизированные блоки для сборки каждой страницы</div>
+    <div class="comp-grid">${compLib.map(([tag,title,desc])=>{
+      const c = COMP_COLORS[tag]||'#6b6b8a';
+      return `<div class="comp-card" style="border-left:3px solid ${c}">
+        ${makeTag(tag)}
+        <div class="title">${title}</div>
+        <div class="desc">${desc}</div>
+      </div>`;
+    }).join('')}</div>`;
+}
+
+// --- TAB SWITCHING ---
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const id = tab.dataset.tab;
+    ['overview','pages','bn','todo','lib'].forEach(t=>{
+      document.getElementById('t-'+t).classList.toggle('hidden', t!==id);
+    });
+    if(id==='pages') renderPages();
+    if(id==='bn') renderBn();
+    if(id==='todo') renderTodo();
+    if(id==='lib') renderLib();
+  };
+});
+
+// Init
+renderPages(); renderBn(); renderTodo(); renderLib();
+</script>
+</body>
+</html>
