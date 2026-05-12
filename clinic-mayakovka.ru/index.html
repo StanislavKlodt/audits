@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRO-Аудит · clinic-mayakovka.ru</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Manrope:wght@400;600;800&display=swap');
+:root {
+  --bg: #08080d; --card: #111118; --border: #1e1e2e; --text: #d4d4e8;
+  --muted: #6b6b8a; --white: #f0f0ff; --accent: #818cf8; --accentD: #818cf822;
+  --red: #f87171; --redD: #f8717115; --orange: #fbbf24; --orangeD: #fbbf2415;
+  --green: #34d399; --greenD: #34d39915; --cyan: #22d3ee; --cyanD: #22d3ee15;
+  --purple: #a78bfa; --pink: #f472b6; --teal: #2dd4bf;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: 'Manrope', system-ui, sans-serif; line-height: 1.6; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+.header { background: linear-gradient(135deg, #818cf810, #f8717108); border-bottom: 1px solid var(--border); padding: 20px 24px; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; max-width: 1100px; margin: 0 auto; }
+.header h1 { font-size: 28px; font-weight: 900; color: var(--white); margin-top: 2px; }
+.header .sub { font-size: 11px; color: var(--accent); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+.header .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stats { display: flex; gap: 8px; }
+.stat { text-align: center; padding: 6px 16px; border-radius: 8px; }
+.stat .n { font-size: 20px; font-weight: 900; }
+.stat .l { font-size: 9px; font-weight: 700; letter-spacing: .06em; }
+
+.tabs { display: flex; border-bottom: 1px solid var(--border); max-width: 1100px; margin: 0 auto; overflow-x: auto; }
+.tab { padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; font-family: inherit; transition: all .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab .badge { font-size: 10px; background: var(--card); padding: 1px 7px; border-radius: 10px; margin-left: 5px; }
+.tab.active .badge { background: var(--accentD); color: var(--accent); }
+
+.content { padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+.hidden { display: none !important; }
+
+.page-btns { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.page-btn { padding: 7px 16px; font-size: 12px; font-weight: 700; background: var(--card); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: inherit; transition: all .15s; }
+.page-btn:hover { background: var(--border); }
+.page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.url-bar { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; background: var(--card); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 14px; word-break: break-all; }
+
+.problem { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; }
+.problem .text { font-size: 12px; line-height: 1.6; }
+.sev { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 3px; letter-spacing: .08em; white-space: nowrap; flex-shrink: 0; }
+.sev-c { color: var(--red); background: var(--redD); }
+.sev-h { color: var(--orange); background: var(--orangeD); }
+.sev-m { color: var(--cyan); background: var(--cyanD); }
+
+.wires { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+.wire { flex: 1; min-width: 300px; }
+.wire-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+.wire-frame { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
+.wire-chrome { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; }
+.wire-bar { flex: 1; height: 14px; background: var(--card); border-radius: 4px; margin-left: 8px; }
+
+.wf-block { border-radius: 6px; padding: 0 10px; display: flex; align-items: center; gap: 6px; margin-bottom: 3px; position: relative; overflow: hidden; }
+.wf-block .label { font-size: 11px; }
+.wf-block.problem-block { border-color: rgba(248,113,113,.3) !important; }
+.wf-block.problem-block .label { color: var(--red); font-weight: 600; }
+.wf-block .warn { position: absolute; right: 8px; font-size: 9px; color: var(--red); font-weight: 700; }
+
+.tag { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 3px; letter-spacing: .04em; white-space: nowrap; flex-shrink: 0; }
+
+.hero-cmp { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+.hero-btns { display: flex; gap: 8px; margin-bottom: 12px; }
+.hero-btn { padding: 5px 14px; font-size: 11px; font-weight: 700; border-radius: 5px; cursor: pointer; font-family: inherit; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all .15s; }
+.hero-btn.active-now { background: var(--redD); color: var(--red); border-color: rgba(248,113,113,.3); }
+.hero-btn.active-new { background: var(--greenD); color: var(--green); border-color: rgba(52,211,153,.3); }
+.hero-text { font-size: 13px; line-height: 1.8; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; padding: 12px; background: var(--bg); border-radius: 6px; }
+.hero-text-now { color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+.hero-text-new { color: var(--green); border: 1px solid rgba(52,211,153,.2); }
+
+.bn-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 8px; display: flex; gap: 14px; }
+.bn-num { font-size: 20px; font-weight: 900; color: var(--border); min-width: 28px; text-align: right; line-height: 1; }
+.bn-title { font-size: 14px; font-weight: 800; color: var(--white); }
+.bn-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 4px 0 8px; }
+.bn-fix { font-size: 12px; color: var(--green); line-height: 1.5; padding: 6px 10px; background: var(--greenD); border-radius: 5px; border-left: 3px solid var(--green); }
+
+.section-title { font-size: 15px; font-weight: 800; margin-bottom: 12px; }
+.todo-row { display: grid; grid-template-columns: 1fr 110px 80px 140px; gap: 8px; align-items: center; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; margin-bottom: 4px; }
+.todo-row .what { font-weight: 600; }
+.content-task { padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.content-task .num { color: var(--purple); font-weight: 800; }
+
+.comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.comp-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.comp-card .title { font-size: 13px; font-weight: 700; color: var(--white); margin: 6px 0 4px; }
+.comp-card .desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+.overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.ov-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.ov-card .label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+.ov-card p { font-size: 13px; line-height: 1.7; }
+.finding { background: linear-gradient(135deg, rgba(248,113,113,.06), rgba(129,140,248,.06)); border: 1px solid rgba(248,113,113,.2); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.finding h3 { font-size: 16px; font-weight: 800; color: var(--red); margin-bottom: 10px; }
+.finding p { font-size: 14px; line-height: 1.8; }
+.segment { font-size: 12px; padding: 5px 10px; background: var(--accentD); border-radius: 6px; border-left: 3px solid var(--accent); margin-bottom: 4px; }
+
+@media (max-width: 700px) {
+  .wires { flex-direction: column; }
+  .todo-row { grid-template-columns: 1fr; gap: 4px; }
+  .header-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div>
+      <div class="sub">CRO-аудит многостраничного сайта</div>
+      <h1>clinic-mayakovka.ru</h1>
+      <div class="desc">Клиника на Маяковке (КМ-Медцентр) — многопрофильная частная клиника · Москва, ул. 1-я Брестская 17 · 7 страниц · 28 рекомендаций</div>
+    </div>
+    <div class="stats">
+      <div class="stat" style="background:var(--redD)"><div class="n" style="color:var(--red)">4</div><div class="l" style="color:var(--red)">КРИТ</div></div>
+      <div class="stat" style="background:var(--orangeD)"><div class="n" style="color:var(--orange)">15</div><div class="l" style="color:var(--orange)">ВЫСОК</div></div>
+      <div class="stat" style="background:var(--cyanD)"><div class="n" style="color:var(--cyan)">9</div><div class="l" style="color:var(--cyan)">СРЕДН</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-tab="overview">Обзор</button>
+  <button class="tab" data-tab="pages">Аудит страниц <span class="badge">28</span></button>
+  <button class="tab" data-tab="bn">Узкие горлышки <span class="badge">10</span></button>
+  <button class="tab" data-tab="todo">ТЗ на улучшения <span class="badge">22</span></button>
+  <button class="tab" data-tab="lib">Компоненты</button>
+</div>
+
+<div class="content" id="t-overview">
+  <div class="overview-grid">
+    <div class="ov-card">
+      <div class="label">Бизнес</div>
+      <p><strong>ООО «КМ-МЕД центр»</strong> — многопрофильная частная клиника на Маяковке (1-я Брестская, 17, стр. 3). 23+ врача, 200+ направлений диагностики и лечения: стоматология, гинекология, эндокринология, маммология, урология, дерматовенерология, УЗИ, неврология, кардиология, офтальмология, лабораторные анализы. Лицензия Депздрава Москвы с 2015 г. Работают ежедневно 09:00–21:00. Цены на сайте есть — большой прайс-лист на ~500 услуг лежит на /services и на каждой странице направления.</p>
+    </div>
+    <div class="ov-card">
+      <div class="label">Целевая аудитория (AJTBD)</div>
+      <div class="segment">A: «Сейчас болит» — острая жалоба (зуб, симптом), ищет ближайшую клинику с записью на сегодня/завтра</div>
+      <div class="segment">B: «Плановая проверка» — чекап, диспансеризация, женский профилактический осмотр, контроль гормонов</div>
+      <div class="segment">C: «По рекомендации врача» — пришёл с направлением сделать УЗИ/анализы/ЭКГ в конкретный срок</div>
+      <div class="segment">D: «Выбираю врача» — комплексное лечение (стоматология, гинекология, эндокринология), сравнивает 3-5 клиник по врачам и отзывам</div>
+      <div class="segment">E: «Иду к этому врачу» — знает фамилию специалиста, ищет где он принимает и как записаться</div>
+    </div>
+    <div class="ov-card">
+      <div class="label">Охват аудита</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Главная</span><span style="color:var(--muted)">5 проблем</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Услуги (прайс)</span><span style="color:var(--muted)">4 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Стоматология</span><span style="color:var(--muted)">5 проблем</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Гинекология</span><span style="color:var(--muted)">4 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Врачи</span><span style="color:var(--muted)">4 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Акции</span><span style="color:var(--muted)">3 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Контакты</span><span style="color:var(--muted)">3 проблемы</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="finding">
+    <h3>Главная находка</h3>
+    <p>На сайте <strong>есть всё для конверсии: прайс на 500 услуг, 15 врачей с фото и аккредитацией, 4 номера телефонов, формы записи на каждой странице, лицензия Депздрава</strong>. Это серьёзная клиника, которая на сайте выглядит как «информационная страница из 2010 года».</p>
+    <p style="margin-top:12px"><strong>Корневая проблема — отсутствие соцдоказательств в точках принятия решения.</strong> Пациент выбирает клинику по 3 вещам: 1) хороший ли врач, 2) что говорят те, кто уже был, 3) безопасно ли (лицензия, оборудование). Сейчас на сайте нет ни одного отзыва пациента, ни одной фотографии работ стоматолога «до/после», ни одного видео-приёма или живого фото врача в кабинете. 23+ наград упомянуты числом, но не показаны. Это убивает доверие в момент, когда оно решает выбор.</p>
+    <p style="margin-top:12px"><strong>Второе горлышко — H1 и сегментация на главной.</strong> H1 «Безопасные, эффективные и комфортные процедуры по доступной цене» — это маркетинговый штамп, не повторяющий поисковый интент. Пациент с острой болью ищет «стоматолог Маяковская срочно», пациент с плановой проверкой — «гинеколог Москва центр отзывы», пациент-чекапер — «чекап в Москве». Главная не идентифицирует ни один сегмент: 9 одинаковых плиток направлений равной важности, без указания «врач сегодня свободен / запись на завтра / от X ₽».</p>
+    <p style="margin-top:12px"><strong>Третье — страницы направлений (стоматология, гинекология и т.д.) построены как «вводный текст + прайс из 150 строк + 3 формы».</strong> Нет фото кабинета, нет ФИО врачей этого направления с фото, нет работ «до/после» (для стоматологии — критично), нет FAQ типа «болезненно ли?», «сколько длится?», «нужна ли анестезия?», нет цены «от X ₽» в hero. Прайс из 150 строк без поиска и группировки — паралич выбора. В медицинской услуге пациент покупает не «прайс из 150 строк», а «конкретного врача в конкретной услуге, которому доверяют».</p>
+    <p style="margin-top:12px"><strong>Четвёртое — акции бессрочны и абстрактны.</strong> «Скидка до 15%» без базовых цен в рублях, без даты окончания, без «было/стало». Программа лояльности обещает «до 50%» без условий. Это снижает доверие, а не повышает срочность.</p>
+  </div>
+  <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px">Превью главной страницы</div>
+  <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--card);margin-bottom:20px">
+    <div style="padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
+      <div style="width:6px;height:6px;border-radius:50%;background:#ef4444"></div><div style="width:6px;height:6px;border-radius:50%;background:#fbbf24"></div><div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div>
+      <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-left:4px">clinic-mayakovka.ru</span>
+    </div>
+    <div style="position:relative;min-height:180px;background:#1a1a24">
+      <img src="https://image.thum.io/get/width/1200/crop/600/https://clinic-mayakovka.ru/" alt="Скриншот главной" style="width:100%;display:block;opacity:0;transition:opacity .5s" onload="this.style.opacity=1;this.nextElementSibling.style.display='none'" onerror="this.nextElementSibling.innerHTML='Скриншот не загрузился'" />
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Загрузка...</div>
+    </div>
+  </div>
+</div>
+<div class="content hidden" id="t-pages"></div>
+<div class="content hidden" id="t-bn"></div>
+<div class="content hidden" id="t-todo"></div>
+<div class="content hidden" id="t-lib"></div>
+
+<script>
+const COMP_COLORS = {
+  HERO:'#818cf8', PROOF:'#22d3ee', PORTFOLIO:'#a78bfa', TRUST:'#34d399',
+  QUIZ:'#fbbf24', FAQ:'#f472b6', NEXT:'#2dd4bf', CROSS:'#c084fc',
+  ID:'#fb923c', PRICE:'#4ade80', PROC:'#60a5fa', WEAK:'#f87171',
+  OK:'#6b6b8a', BLOG:'#6b6b8a', SEO:'#f87171', NAV:'#6b6b8a',
+  FILTER:'#22d3ee', CATALOG:'#818cf8', DOC:'#a78bfa', SPEC:'#22d3ee',
+  TABLE:'#4ade80', CARD:'#a78bfa', REVIEW:'#f472b6', MAP:'#2dd4bf',
+  BA:'#a78bfa'
+};
+
+const pages = [
+  { id:'home', title:'Главная', url:'clinic-mayakovka.ru/',
+    problems: [
+      {l:'c',t:'Нет ни одного отзыва пациента на главной. Для медклиники это критический разрыв: пациент в момент принятия решения сравнивает 3-5 клиник по отзывам, а тут — пусто. Конкуренты с 50+ отзывами 2GIS/Яндекс на главной выигрывают по умолчанию'},
+      {l:'h',t:'H1 «КМ-Медцентр — многопрофильный медицинский центр» + «Безопасные, эффективные и комфортные процедуры по доступной цене» — описательно и без интента. Не повторяет ни один поисковый запрос, не отвечает на «зачем мне сюда сейчас»'},
+      {l:'h',t:'9 направлений показаны как плитки равной важности без иерархии. Нет «врач сегодня свободен», «запись на завтра», «от X ₽» — каждая плитка не двигает к решению, только идентифицирует наличие направления'},
+      {l:'h',t:'Нет блока IDENTIFY: «острая боль сегодня / плановая проверка / по направлению врача / комплексное лечение». Главная ловит всех, но не сегментирует трафик из контекста'},
+      {l:'m',t:'Цифры «23 специалиста · 200+ направлений · 2900+ клиентов · 23+ наград» — без подкрепления. 2900 клиентов за всю историю клиники с 2015 — это мало, лучше «5000 приёмов в год» (есть на странице О клинике)'}
+    ],
+    before: [
+      {tag:'HERO',label:'H1 описательный + 2 CTA «Оставить заявку / Смотреть услуги»',h:64,p:1},
+      {tag:'OK',label:'4 иконки без текста (графика)',h:36},
+      {tag:'CATALOG',label:'9 направлений равной важности без цен «от» и без статуса записи',h:64,p:1},
+      {tag:'OK',label:'4 преимущества: опыт врачей, оборудование, выбор услуг, интерьер',h:48},
+      {tag:'OK',label:'Галерея интерьера (15 фото кабинетов)',h:48},
+      {tag:'DOC',label:'12 врачей с кратким описанием',h:56},
+      {tag:'OK',label:'6 развёрнутых направлений-карточек',h:52},
+      {tag:'WEAK',label:'НЕТ блока отзывов пациентов',h:40,p:1},
+      {tag:'NEXT',label:'Форма заявки #1 (имя, телефон, сообщение)',h:44},
+      {tag:'NEXT',label:'Форма записи #2 (имя, дата, время, направление, телефон)',h:48},
+      {tag:'NEXT',label:'Форма записи #3 — повторная',h:40,p:1}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 с интентом + цена «от 1500₽» + «врач сегодня» + 2 CTA',h:60},
+      {tag:'PROOF',label:'10 лет · 5000+ приёмов/год · Лицензия Депздрава · м. Маяковская · 09–21 ежедневно',h:40},
+      {tag:'ID',label:'4 пути: Острая боль / Чекап / По направлению / Выбираю врача',h:60},
+      {tag:'CATALOG',label:'Топ-9 направлений: цена «от», ФИО ведущего врача, «свободно сегодня/завтра»',h:80},
+      {tag:'REVIEW',label:'Лента отзывов: 8-10 проверенных с 2GIS/Яндекс/ПроДокторов (с рейтингом)',h:64},
+      {tag:'DOC',label:'Топ-12 врачей: фото в кабинете, ФИО, стаж, ближайшая запись',h:64},
+      {tag:'BA',label:'До/после (стоматология) + фото оборудования и кабинетов',h:56},
+      {tag:'TRUST',label:'Лицензия Депздрава + 23 награды (фото дипломов) + ИСО/сертификаты',h:44},
+      {tag:'FAQ',label:'6-8 вопросов: цены, страховка ДМС, очный/онлайн, оплата, парковка, дети',h:48},
+      {tag:'NEXT',label:'1 форма записи: услуга → врач → дата/время → телефон. SLA «перезвоним за 15 мин»',h:48},
+      {tag:'MAP',label:'Карта + фото входа + маршрут от метро + парковка',h:40}
+    ],
+    heroNow:'«КМ-Медцентр — многопрофильный\nмедицинский центр»\n\n«Безопасные, эффективные и комфортные\nпроцедуры по доступной цене»\n\n[Оставить заявку]  [Смотреть услуги]\n\n(Дальше — 9 плиток направлений равной важности.\nЦен нет. Слотов записи нет.\nКто принимает сегодня — непонятно.)',
+    heroNew:'«Клиника на Маяковке —\nприём у 23+ врачей с 09:00 до 21:00»\n\n200 направлений · Лицензия Депздрава с 2015\nм. Маяковская, 4 мин пешком · от 1500 ₽\n\n✓ Перезвоним за 15 минут\n✓ Запись на сегодня и на завтра доступна\n\n[Записаться на приём]  [Найти врача]\n\n★ 4.8 на ПроДокторов · 4.9 на 2GIS\n(140+ отзывов · 5000+ приёмов в год)'
+  },
+  { id:'services', title:'Услуги (прайс)', url:'clinic-mayakovka.ru/services',
+    problems: [
+      {l:'c',t:'500+ строк прайса без группировки по направлениям. Пациент, кликнувший «Услуги» из меню, получает стену из 500 цен — паралич. Стоматология, гинекология, лаборатория свалены в один список'},
+      {l:'h',t:'Поле «Найти» есть, но фильтров (направление, ценовой диапазон, кому: взрослый/ребёнок) нет. Поиск помогает только тем, кто знает точное название услуги — а пациент часто ищет «удалить зуб» или «УЗИ щитовидки», а не «экстракция зуба сложная»'},
+      {l:'h',t:'Нет «топ услуг» или «популярные» — пациент сразу видит хвост из редких процедур (биопсия, цитология). Должен быть блок «топ-20 самых востребованных приёмов с ценами» в начале'},
+      {l:'m',t:'Кнопка «Записаться» у каждой строки прайса ведёт к одной общей форме, не подставляя выбранную услугу. Пациент должен вспоминать что он выбирал в выпадающем списке формы'}
+    ],
+    before: [
+      {tag:'OK',label:'Хлебные крошки + H1 «Услуги — 200+ направлений»',h:32},
+      {tag:'OK',label:'Поле поиска «Найти»',h:32},
+      {tag:'TABLE',label:'500+ строк прайса без группировки и без фильтров по направлению',h:120,p:1},
+      {tag:'WEAK',label:'Нет «топ-20 популярных» в начале',h:36,p:1},
+      {tag:'NEXT',label:'2 формы записи внизу',h:48},
+      {tag:'OK',label:'Карточки 8 направлений-ссылок',h:44},
+      {tag:'OK',label:'Футер с лицензией',h:32}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 + «500+ услуг по 12 направлениям. Найдите свою»',h:48},
+      {tag:'FILTER',label:'Фильтры: направление | взрослые/дети | до 3к/3-10к/10к+ | поиск',h:48},
+      {tag:'CATALOG',label:'12 направлений-карточек с ценой «от X ₽» и числом услуг внутри',h:72},
+      {tag:'TABLE',label:'Топ-30 самых частых: приём врача / УЗИ / ОАК / снимок / чистка',h:80},
+      {tag:'TABLE',label:'Полный прайс с группировкой по направлению (раскрытие/свёртывание)',h:96},
+      {tag:'PROC',label:'Кнопка «Записаться» подставляет название услуги в форму автоматически',h:40},
+      {tag:'TRUST',label:'Под прайсом: «Цены действуют до 31.12.2026 · Без скрытых наценок»',h:40},
+      {tag:'FAQ',label:'5 вопросов: доплаты, ДМС, материалы в цене, оплата картой/наличными',h:48},
+      {tag:'NEXT',label:'Форма с предзаполненной услугой + «перезвоним за 15 мин»',h:48}
+    ],
+    heroNow:'«Услуги клиники — 200+ направлений\nдиагностики и лечения»\n\n[Поле поиска «Найти»]\n\n────────────────────────────\nКод | Название услуги             | Цена\n────────────────────────────\n01.01 Первичный приём терапевта   2 500\n01.02 Повторный приём терапевта   2 000\n02.01 Приём стоматолога           1 800\n... (500+ строк подряд)\n────────────────────────────\n\nНи фильтра по направлению,\nни «топ популярных»,\nни группировки.',
+    heroNew:'«Прайс клиники: 500+ услуг\nпо 12 направлениям»\n\n[Направление ▾] [Взрослые/Дети] [Цена ▾] [🔍]\n\n┌─ Топ-30 самых частых ─┐\n│ Терапевт (приём)     2 500\n│ Гинеколог (приём)    3 800\n│ УЗИ щитовидки        2 200\n│ ОАК + биохимия      от 1 500\n└──────────────────────────┘\n\n▼ Стоматология (152 услуги) ─ от 180 ₽\n▼ Гинекология (87 услуг) ─ от 700 ₽\n▼ Лабораторные (140 услуг) ─ от 200 ₽\n... (раскрытие/свёртывание по клику)\n\n[Записаться] у каждой строки\nс автоподстановкой названия услуги'
+  },
+  { id:'stomat', title:'Стоматология', url:'clinic-mayakovka.ru/page127800326.html',
+    problems: [
+      {l:'c',t:'Нет ни одной фотографии «до/после». Для стоматологии это критично — пациент выбирает по визуальному результату. Никаких фото улыбок, виниров, отбеливания. Только текст и SVG-иконки'},
+      {l:'c',t:'Нет ФИО стоматологов на странице — а это направление, которое пациент выбирает по конкретному врачу. Есть ссылка /doctors на весь общий список, но нужно прямо тут «вот ваш стоматолог Иванова Е.А., стаж 18 лет, фото в кабинете, ближайшая запись»'},
+      {l:'h',t:'150+ позиций прайса от 180 до 270 000 ₽ без группировки на «терапия / хирургия / ортопедия / ортодонтия / детская». Пациент с пульпитом и пациент с элайнерами видят один и тот же список — невозможно ориентироваться'},
+      {l:'h',t:'Нет FAQ-блока с главными вопросами: «больно ли?», «нужна ли анестезия?», «сколько времени займёт?», «можно ли в кредит/рассрочку?», «работаете с ДМС?», «делаете ли с детьми?». Это вопросы, на которых пациент уходит на сайт конкурента'},
+      {l:'m',t:'Список 9 услуг в верху и список 150 в прайсе не связаны. Пользователь видит «терапевтическое лечение» в карточке вверху и не понимает, где найти его цены в таблице ниже. Якоря не работают по теме'}
+    ],
+    before: [
+      {tag:'OK',label:'Контакты + меню (стандартный header)',h:32},
+      {tag:'HERO',label:'H1 «Стоматология» + подзаголовок без УТП. Без фото врача/работ',h:48,p:1},
+      {tag:'OK',label:'Вводный текст «о значении стоматологии»',h:48},
+      {tag:'OK',label:'9 услуг-карточек (терапия, хирургия, имплантация...)',h:56},
+      {tag:'OK',label:'«Что мы делаем» — упоминание микроскопа, 3D-снимков',h:48},
+      {tag:'OK',label:'5 преимуществ',h:44},
+      {tag:'TABLE',label:'Прайс 150+ строк без группировки по подспециализации',h:120,p:1},
+      {tag:'WEAK',label:'НЕТ фото до/после, фото врачей, кабинета',h:40,p:1},
+      {tag:'WEAK',label:'НЕТ FAQ, отзывов, гарантий',h:40,p:1},
+      {tag:'NEXT',label:'2 формы записи',h:48}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 «Стоматология в Москве на Маяковке — от 1800₽» + 2 CTA: подбор/запись',h:60},
+      {tag:'PROOF',label:'Микроскоп · 3D-снимки · Лицензия Депздрава · Анестезия включена · С 09 до 21',h:40},
+      {tag:'DOC',label:'Карточки 3-5 стоматологов с фото в кабинете, стажем, ближ. записью',h:80},
+      {tag:'BA',label:'10-15 работ «до/после»: виниры, отбеливание, имплантация, реставрация',h:80},
+      {tag:'CATALOG',label:'5 подспециализаций: Терапия / Хирургия / Ортопедия / Ортодонтия / Детская',h:60},
+      {tag:'TABLE',label:'Прайс с табами по подспециализации + цена «от» в каждом блоке',h:80},
+      {tag:'REVIEW',label:'8-10 отзывов именно по стоматологии (ПроДокторов, 2GIS, Яндекс)',h:64},
+      {tag:'TRUST',label:'Гарантия на имплантацию 10 лет / на пломбу 1 год · договор + чек',h:44},
+      {tag:'PROC',label:'5 шагов: запись → консультация → план → лечение → контроль',h:48},
+      {tag:'FAQ',label:'Болезненно? Анестезия? Гарантия? ДМС? Рассрочка? Дети с какого возраста?',h:48},
+      {tag:'NEXT',label:'Форма: услуга (preselect) + врач (на выбор) + дата → телефон',h:48}
+    ],
+    heroNow:'«Стоматология»\n\n«Мы оказываем полный спектр\nстоматологических услуг»\n\n(Картинка SVG-зуба, дальше текст\n«стоматология — забота о здоровье».\n\n9 услуг плиткой. 5 преимуществ.\nПотом прайс из 150 строк подряд:\nот 180 ₽ (полировка) до 270 000 ₽ (элайнеры).\n\nНи фото врача. Ни фото работ.\nНи отзыва. Ни гарантии. Ни FAQ.)',
+    heroNew:'«Стоматология на Маяковке —\nот 1 800 ₽, с лечением под микроскопом»\n\nИмплантация · Виниры · Отбеливание ·\nДетская стоматология · Ортодонтия\n\n✓ Анестезия включена в стоимость\n✓ Гарантия на имплантацию 10 лет\n✓ Запись на завтра свободна\n✓ Принимаем по ДМС\n\n👨‍⚕️ Иванова Е.А. — стаж 18 лет\n👨‍⚕️ Петров И.С. — стаж 12 лет\n👨‍⚕️ Сидорова О.В. — детский стоматолог\n\n[Записаться на консультацию]\n[Подобрать врача по задаче]\n\n📸 10+ работ «до/после» ниже'
+  },
+  { id:'gyneco', title:'Гинекология', url:'clinic-mayakovka.ru/page103521736.html',
+    problems: [
+      {l:'h',t:'Нет ФИО гинекологов на странице. Пациентка выбирает гинеколога особенно тщательно — нужно «вот доктор, к которой ходят 200+ женщин этого района, фото в кабинете, ближайшая запись»'},
+      {l:'h',t:'80+ позиций прайса без группировки: «приём / диагностика / процедуры / ВМС / хирургия / онкоскрининг» — всё свалено в одну таблицу. Беременная женщина и женщина 45+ для онкоскрининга нужны разные подмножества'},
+      {l:'h',t:'Нет деликатных формулировок и обещаний приватности. Женщины часто откладывают визит к гинекологу из-за стеснения. На сайте — холодный прайс. Конкуренты выигрывают на «деликатный приём», «врач-женщина», «без направления»'},
+      {l:'m',t:'Нет блока «когда нужно к гинекологу» (триггер) и нет «комплексных программ ведения беременности / женского здоровья» — упускается чек по чек-апам'}
+    ],
+    before: [
+      {tag:'HERO',label:'H1 «Акушерство и гинекология» + подзаголовок без УТП',h:48,p:1},
+      {tag:'OK',label:'Описание услуг (что делается)',h:48},
+      {tag:'OK',label:'Преимущества и технологии (общими словами)',h:48},
+      {tag:'TABLE',label:'Прайс 80+ строк без группировки и без «программ»',h:100,p:1},
+      {tag:'WEAK',label:'НЕТ ФИО гинекологов, фото, отзывов',h:40,p:1},
+      {tag:'NEXT',label:'3 формы записи',h:48}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 «Гинеколог на Маяковке — от 3800₽, врачи-женщины» + 2 CTA',h:60},
+      {tag:'PROOF',label:'Врачи-женщины · Деликатный приём · Без направления · Конфиденциально · ДМС',h:40},
+      {tag:'DOC',label:'2-4 гинеколога с фото, стажем (28+ лет), категорией, ближ. записью',h:72},
+      {tag:'CATALOG',label:'Программы: Чекап женского здоровья / Ведение беременности / Менопауза / ВМС',h:80},
+      {tag:'TABLE',label:'Прайс по группам: Приём (от 3800) · УЗИ (от 2200) · Процедуры · Анализы · ВМС',h:80},
+      {tag:'REVIEW',label:'6-8 отзывов именно от пациенток-женщин (ПроДокторов, 2GIS)',h:56},
+      {tag:'TRUST',label:'Конфиденциально · Договор · Лицензия Депздрава · Платежи по чеку',h:40},
+      {tag:'FAQ',label:'Когда нужно к гинекологу? Боюсь — деликатно ли? Что взять? Цикл? Девственность?',h:48},
+      {tag:'NEXT',label:'Форма с выбором программы / разовой услуги. Чат через WhatsApp с врачом',h:48}
+    ],
+    heroNow:'«Акушерство и гинекология»\n\n«Профилактика, точная диагностика\nи лечение женских состояний\nс деликатным подходом»\n\n(Услуги списком, преимущества общими словами,\nпрайс 80+ строк без группировки:\nот 700 ₽ (мазок) до 31 500 ₽ (ВМС с золотом).\n\nНи ФИО врача. Ни фото. Ни отзыва.\nНи обещания приватности или врача-женщины.)',
+    heroNew:'«Гинеколог в центре Москвы —\nот 3 800 ₽, приём у врача-женщины»\n\nПервичный приём · УЗИ органов малого таза ·\nВедение беременности · Постановка/удаление ВМС\n\n✓ Все врачи — женщины\n✓ Деликатный приём без направления\n✓ Конфиденциальность гарантирована\n✓ Принимаем по ДМС\n\n👩‍⚕️ Кузнецова М.А. — врач высшей категории,\n         стаж 28 лет\n👩‍⚕️ Соколова И.Н. — к.м.н., акушер-гинеколог\n\n📋 Программа «Женский чекап»: УЗИ +\n         анализы + приём = 8 500 ₽\n\n[Записаться]  [Спросить в WhatsApp]'
+  },
+  { id:'doctors', title:'Врачи', url:'clinic-mayakovka.ru/doctors',
+    problems: [
+      {l:'c',t:'Нет ни одного отзыва на врача. На странице, где пациент именно выбирает врача — это ключевой пробел. ПроДокторов и Яндекс.Здоровье выигрывают потому, что там у каждого врача рейтинг + 10-50 отзывов. Здесь — только аккредитация и стаж'},
+      {l:'h',t:'Нет статуса «свободные слоты сегодня / на этой неделе» рядом с врачом. Пациент должен листать формы записи и проверять — это лишний шаг. Конкуренты показывают «свободно сегодня 17:00, 18:30» прямо в карточке'},
+      {l:'h',t:'Нет цены приёма у конкретного врача. Пациент видит образование и стаж, но не знает «сколько стоит к нему попасть» — нужно идти в /services и искать. Барьер'},
+      {l:'m',t:'Фильтр по специализации есть, но нет фильтра «врач-женщина / врач-мужчина», «опыт 20+/10+», «к.м.н.», «детский». Эти атрибуты определяют выбор для конкретных сегментов'}
+    ],
+    before: [
+      {tag:'HERO',label:'H1 «Наши врачи» + подзаголовок «высококлассные специалисты»',h:44,p:1},
+      {tag:'FILTER',label:'Фильтр только по специализации',h:36,p:1},
+      {tag:'DOC',label:'15 карточек врачей: ФИО, фото, стаж, специальность, образование, аккредитация',h:120},
+      {tag:'WEAK',label:'НЕТ отзывов, рейтинга, цены приёма, статуса записи',h:40,p:1},
+      {tag:'NEXT',label:'2 формы записи внизу',h:48}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 «Врачи Клиники на Маяковке — 23 специалиста». Фильтры + поиск',h:48},
+      {tag:'FILTER',label:'Направление | Пол врача | Стаж 10+/20+ | Категория | Детский | Срочно',h:48},
+      {tag:'DOC',label:'Карточка врача: фото + рейтинг ★4.9 + 47 отзывов + цена приёма + «свободно 17:00»',h:120},
+      {tag:'REVIEW',label:'2-3 свежих отзыва на каждой карточке (раскрытие подробнее)',h:64},
+      {tag:'TRUST',label:'Дипломы и сертификаты каждого врача (галерея)',h:44},
+      {tag:'NEXT',label:'Кнопка «Записаться к Иванову Е.А.» прямо в карточке (без общей формы)',h:44}
+    ],
+    heroNow:'«Наши врачи»\n«высококлассные специалисты\nс большим опытом работы»\n\n[Фильтр: специализация ▾]\n\n┌─ Карточка врача ──────────┐\n│ [Фото]                    │\n│ Иванова Е.А.              │\n│ Стоматолог-терапевт       │\n│ Стаж 18 лет               │\n│ Аккредитация 32-...       │\n│ МГМСУ, 2005               │\n└───────────────────────────┘\n\nНи рейтинга. Ни отзывов.\nНи цены приёма. Ни «свободно сегодня».\nДля записи — общая форма внизу страницы.',
+    heroNew:'«Врачи Клиники на Маяковке —\n23 специалиста, средний стаж 17 лет»\n\n[Напр. ▾] [Пол врача] [Стаж 20+] [Детский]\n\n┌─ Карточка ──────────────────────┐\n│ [Фото в кабинете]               │\n│ Иванова Е.А., стоматолог-терапевт│\n│ Стаж 18 лет · Высшая кат.       │\n│ ★ 4.9 · 47 отзывов              │\n│ Приём 2 500 ₽                   │\n│ ✅ Свободно сегодня 17:00, 18:30 │\n│                                 │\n│ «Лучший стоматолог за 10 лет!»  │\n│   — Анна, ПроДокторов, 12.04    │\n│                                 │\n│ [Записаться к Ивановой]         │\n└─────────────────────────────────┘'
+  },
+  { id:'actions', title:'Акции', url:'clinic-mayakovka.ru/actions',
+    problems: [
+      {l:'h',t:'Нет сроков действия акций (когда заканчивается). Без дедлайна нет ощущения срочности — основного двигателя акции. «Скидка 15%» бессрочно — это уже не акция, а просто цена'},
+      {l:'h',t:'Нет цен «было / стало» в рублях. «Скидка 15%» — пациент должен сам считать. Конкуренты пишут «Чекап Мини: 12 500 ₽ ~~14 700 ₽~~ — экономия 2 200 ₽ до 30 июня»'},
+      {l:'m',t:'Программа лояльности обещает «до 50% скидки», но условия скрыты за ссылкой «Подробнее». Без условий это выглядит как пустое обещание, а не реальная выгода'}
+    ],
+    before: [
+      {tag:'HERO',label:'H1 «Акции» + подзаголовок',h:40},
+      {tag:'OK',label:'Чек-ап витаминов и минералов — забор крови в подарок (без сроков)',h:56,p:1},
+      {tag:'OK',label:'Чек-ап «Мини» — скидка 15% (без базовой цены, без срока)',h:48,p:1},
+      {tag:'OK',label:'Расширенный чекап — скидка до 15% (без цены)',h:48,p:1},
+      {tag:'OK',label:'УЗИ — 10% при 3+ исследованиях (условие хорошее)',h:44},
+      {tag:'WEAK',label:'Программа лояльности «до 50%» — условия скрыты',h:40,p:1},
+      {tag:'NEXT',label:'2 формы записи',h:48}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 «Акции и программы. Экономьте до 30% на чекапах»',h:48},
+      {tag:'PROOF',label:'Срок действия указан · Экономия в рублях · Без подвохов · Без доплат',h:40},
+      {tag:'CATALOG',label:'Карточка акции: фото + было/стало в ₽ + дедлайн + «до конца акции 12 дней»',h:80},
+      {tag:'PRICE',label:'Чекап «Мини»: 14 700₽ → 12 500₽. До 30.06.2026. Экономия 2 200 ₽',h:48},
+      {tag:'TRUST',label:'«Цена в чеке = цена в акции. Никаких доплат» с печатью клиники',h:40},
+      {tag:'CATALOG',label:'Программа лояльности: условия здесь, без «подробнее»',h:64},
+      {tag:'PROC',label:'3 шага: накопить чеков на 30к → получить карту → скидка 10% на всё',h:48},
+      {tag:'NEXT',label:'Форма с выбором акции (preselect) + телефон',h:44}
+    ],
+    heroNow:'«Акции и спецпредложения\nв Клинике на Маяковке —\nвыгодные цены на услуги»\n\n• Чек-ап витаминов — забор крови в подарок\n• Чек-ап «Мини» — скидка 15%\n• Расширенный чек-ап — до 15%\n• УЗИ — 10% при 3+ исследованиях\n\nПрограмма лояльности — «до 50% скидки»\n[Подробнее]\n\nНи сроков. Ни «было/стало» в ₽.\nНи понимания, реальная выгода или нет.',
+    heroNew:'«Акции и программы.\nЭкономьте до 30% на профилактике»\n\n┌─ Чекап «Мини» ────────────────┐\n│ Было: 14 700 ₽                │\n│ Стало: 12 500 ₽               │\n│ Экономия: 2 200 ₽ (15%)       │\n│ До конца акции: 12 дней       │\n│ [Записаться на чекап]         │\n└───────────────────────────────┘\n\n┌─ Программа лояльности ────────┐\n│ Шаг 1: накопите чеков на 30к  │\n│ Шаг 2: получите карту         │\n│ Шаг 3: 10% скидка на всё      │\n│ Дополнительно 20% на день рожд│\n└───────────────────────────────┘'
+  },
+  { id:'contacts', title:'Контакты', url:'clinic-mayakovka.ru/contacts',
+    problems: [
+      {l:'h',t:'Нет интерактивной карты Яндекс/2GIS. Адрес «1-я Брестская 17, стр.3» без карты — пациент должен открывать карту в отдельной вкладке и сам строить маршрут от метро'},
+      {l:'h',t:'Нет описания «как добраться»: от метро Маяковская сколько минут пешком, какой выход, есть ли парковка, нужен ли пропуск во двор (БЦ обычно требует). Это снимает 30% звонков «куда идти»'},
+      {l:'m',t:'4 разных телефона без разделения «запись / экстренно / ДМС / отдел качества». Пациент не понимает, куда звонить с каким вопросом. Лучше один основной + остальные внизу с подписью'}
+    ],
+    before: [
+      {tag:'HERO',label:'H1 «Контакты»',h:36},
+      {tag:'OK',label:'4 телефона без разделения',h:44,p:1},
+      {tag:'OK',label:'Адрес «1-я Брестская 17, стр. 3»',h:36},
+      {tag:'WEAK',label:'НЕТ карты, нет маршрута от метро, нет фото входа',h:40,p:1},
+      {tag:'NEXT',label:'2 формы записи',h:48},
+      {tag:'OK',label:'Реквизиты юр.лица + лицензия',h:60},
+      {tag:'OK',label:'Программа лояльности (повтор)',h:32}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 «Как добраться · ул. 1-я Брестская 17» + телефон 1 кликом',h:44},
+      {tag:'MAP',label:'Интерактивная карта Яндекс + точка клиники',h:80},
+      {tag:'PROC',label:'Маршрут: м. Маяковская — выход №3 — 4 мин пешком (фото-инструкция)',h:60},
+      {tag:'PROOF',label:'Парковка во дворе · Пандус · Вход с улицы · 09–21 ежедневно',h:40},
+      {tag:'OK',label:'Фото входа в БЦ и кабинета ресепшн',h:60},
+      {tag:'CATALOG',label:'Телефоны: 1 основной (запись) + ДМС + экстренно + WhatsApp/Telegram',h:60},
+      {tag:'TRUST',label:'Реквизиты + лицензия + ОГРН (свёрнуто, по клику)',h:40},
+      {tag:'NEXT',label:'1 форма с услугой и временем',h:48}
+    ],
+    heroNow:'«Контакты»\n\nНаши телефоны:\n+7 (966) 303-17-02\n+7 (495) 626-47-57\n+7 (499) 251-46-51\n+7 (499) 251-02-90\n\nНаш адрес:\nг. Москва, ул. 1-я Брестская, д.17, стр.3\nЕжедневно 09:00–21:00\n\n(Без карты. Без описания «как добраться».\nБез фото входа. Без парковки.\n4 телефона без разделения по задачам.)',
+    heroNew:'«Как до нас добраться —\nм. Маяковская, 4 минуты пешком»\n\n📍 Карта (интерактивная)\n   ул. 1-я Брестская 17, стр. 3\n\n🚇 От метро Маяковская выход №3\n   → направо по Тверской 200 м\n   → во двор БЦ через арку\n   → 1-й этаж, вход с торца\n   [Фото-инструкция: 4 фото пути]\n\n🅿️ Парковка во дворе бесплатно (3 ч)\n♿ Пандус есть · Лифт работает\n\n📞 Запись: +7 (495) 626-47-57\n💬 WhatsApp / Telegram — 24/7\n   (по ДМС и экстренные — внизу)'
+  }
+];
+
+const bottlenecks = [
+  {l:'c',title:'Нет соцдоказательств в точках принятия решения',desc:'На сайте нет ни одного отзыва пациента, ни одной фотографии работ стоматолога «до/после», ни одной живой фотографии врача в кабинете. Есть только цифра «23+ наград», но самих дипломов не показано. Пациент в момент выбора клиники открывает 3 вкладки и сравнивает по отзывам — на этом сайте он не видит, что у клиники с отзывами и репутацией всё хорошо.',fix:'1) Подключить виджеты ПроДокторов / Яндекс.Карты / 2GIS на главную и на страницы врачей (рейтинг + 5-10 отзывов автоматически). 2) Снять 10-15 работ «до/после» по стоматологии — это критично для имплантации, виниров, отбеливания. 3) Сфотографировать дипломы и награды, выложить галереей. 4) Получить от 20 пациентов видео-отзывы по 30 секунд (мотивация — скидка на следующий приём).'},
+  {l:'c',title:'Прайс-листы из 150-500 строк без группировки и фильтров',desc:'На странице /services — 500 услуг подряд. На странице стоматологии — 150 услуг от 180 до 270 000 ₽ без подспециализации. Пациент с конкретной проблемой не может найти «свою» цену за разумное время и уходит. Поиск помогает только тем, кто знает точное название услуги.',fix:'1) На /services добавить фильтр «направление + дети/взрослые + ценовой диапазон» и блок «топ-30 самых частых услуг». 2) На страницах направлений группировать прайс по подспециализациям с табами (Стоматология: терапия/хирургия/ортопедия/ортодонтия/детская). 3) Кнопка «Записаться» должна предзаполнять название услуги в форме.'},
+  {l:'c',title:'H1 главной не повторяет ни один интент',desc:'«КМ-Медцентр — многопрофильный медицинский центр» + «Безопасные, эффективные и комфортные процедуры по доступной цене» — это бренд-формулировка, никак не отвечающая на запрос «гинеколог Маяковская», «стоматолог срочно», «УЗИ щитовидки Москва центр». H1 — главное место для повторения интента.',fix:'Сделать вариативные посадки под основные направления (стоматология, гинекология, чекапы) с собственными H1. На главной — H1 общий, но с конкретикой: «Клиника на Маяковке — приём у 23 врачей с 09:00 до 21:00. От 1500 ₽» + 2 CTA. Цифры из О клинике (5000+ приёмов/год) перенести на главную — они сильнее, чем 2900+ за всю историю.'},
+  {l:'c',title:'Главная не сегментирует трафик',desc:'9 одинаковых плиток направлений равной важности — это меню, а не маршрутизатор. Пациент с острой болью, пациент с плановой проверкой, пациент с направлением врача, пациент, ищущий конкретного специалиста — все попадают на одну страницу без подсказки «куда вам». Контекстный трафик не доводится до целевого действия.',fix:'Блок IDENTIFY на главной: 4 пути-карточки. 1) «Острая боль / срочный приём» → форма «перезвоним за 15 минут». 2) «Плановая проверка / чекап» → программы чекапов с ценами. 3) «По направлению врача» → лаборатория + диагностика. 4) «Выбираю врача» → каталог врачей с рейтингом и записью.'},
+  {l:'h',title:'На страницах направлений нет ФИО врачей',desc:'Страница «Стоматология» и «Гинекология» не показывают, кто именно из 23 врачей принимает по этому направлению. Есть общая ссылка /doctors. Пациент, который пришёл выбирать гинеколога или стоматолога, должен делать лишний клик и фильтровать сам.',fix:'На каждой странице направления — блок «Ваши врачи»: 3-5 карточек с фото в кабинете, ФИО, стаж, категория, ближайший свободный слот, цена приёма, кнопка «Записаться именно к этому врачу».'},
+  {l:'h',title:'Нет работ «до/после» на странице стоматологии',desc:'Стоматология — это направление, где визуальный результат решает выбор. Виниры, отбеливание, имплантация, реставрация — пациент покупает «улыбку», а не процедуру. На сайте нет ни одной фотографии работ — только текст и SVG-иконки.',fix:'Снять и выложить минимум 15 работ «до/после» по основным направлениям: виниры (4-5), отбеливание (3), имплантация (3), реставрация (3), элайнеры (2). С согласия пациентов. Разместить блоком на странице стоматологии и галереей на главной.'},
+  {l:'h',title:'Акции без сроков и без цен «было/стало»',desc:'«Скидка 15% на чекап» без указания базовой цены и дедлайна — это не акция, а просто текущая цена. Нет ощущения срочности, нет понимания экономии в рублях. Программа лояльности обещает «до 50%», но условия скрыты за «Подробнее».',fix:'Каждая акция: было/стало в ₽ + экономия в ₽ + дедлайн с обратным отсчётом («осталось 12 дней»). Программа лояльности: вынести условия из «Подробнее» — 3 шага к карте, % скидки по уровням, бонус на день рождения.'},
+  {l:'h',title:'На странице «Врачи» нет цены приёма и статуса записи',desc:'Пациент выбирает врача и сразу хочет понять две вещи: «когда он свободен» и «сколько стоит». Сейчас приходится открывать /services и искать цену вручную, а для записи — листать формы и подбирать дату. На страницах конкурентов (ПроДокторов, Яндекс.Здоровье, ЕМС) эта информация в карточке.',fix:'В каждую карточку врача добавить: цена приёма + ближайший свободный слот (2-3 варианта: «сегодня 17:00, завтра 11:30, четверг 14:00») + кнопка «Записаться к этому врачу» с автоподстановкой ФИО в форму. Подключить рейтинг и отзывы с ПроДокторов.'},
+  {l:'h',title:'Нет карты, маршрута от метро и фото входа на странице контактов',desc:'Адрес «ул. 1-я Брестская, 17, стр. 3» — это БЦ с непростой навигацией (вход с торца, через двор, нужен пропуск/без). Пациент тратит время и нервы, ищет, опаздывает или вовсе разворачивается. Это легко чинится контентом.',fix:'Интерактивная карта Яндекс с пином клиники. Маршрут от метро Маяковская выход №3 с 4-5 фотографиями («идите налево», «во двор через арку», «вход с торца»). Информация о парковке, пандусе, лифте. Фото входа в БЦ и кабинета ресепшн.'},
+  {l:'m',title:'Подмена «приёмов» на «клиентов» в цифрах главной',desc:'На главной — «2900+ клиентов», на странице «О клинике» — «5000+ ежегодно». Это две разные метрики и они не согласованы. 2900 за 10 лет работы выглядит слабо, 5000 в год — звучит уверенно. Сайт сам себя обкрадывает по доверию.',fix:'Унифицировать: на главной — «5000+ приёмов в год», «10 лет работы», «23+ специалиста», «Лицензия Депздрава с 2015». Все цифры должны бить в один сильный нарратив, а не размывать его.'}
+];
+
+const compLib = [
+  ['HERO','Первый экран','H1 с интентом «врач + услуга + локация + цена от». 2 CTA: записаться / найти врача. Под Hero — расширенный PROOF.'],
+  ['PROOF','Полоса доверия','Лет работы · Приёмов в год · Лицензия Депздрава · Метро + минут пешком · 09–21 ежедневно · Принимаем по ДМС.'],
+  ['ID','Идентификация','«Зачем вы сегодня?»: Острая боль / Плановая проверка / По направлению / Выбираю врача. Каждый — свой маршрут.'],
+  ['DOC','Карточка врача','Фото в кабинете · ФИО · стаж · категория · цена приёма · ★ рейтинг + N отзывов · «свободно сегодня 17:00» · кнопка прямо тут.'],
+  ['REVIEW','Отзывы','С ПроДокторов / 2GIS / Яндекс.Карт. С именем, датой, направлением. На главной — лента, на странице врача — 5-10 свежих.'],
+  ['BA','До/после','Стоматология (виниры, отбеливание, имплантация, реставрация), косметология. С согласия пациентов, с пояснением «что делали».'],
+  ['CATALOG','Карточки направлений','Цена «от X ₽» · ФИО ведущего врача · «свободно сегодня/завтра». Не просто перечисление направлений.'],
+  ['FILTER','Фильтры','Направление · Пол врача (для гинекологии — критично) · Стаж 10+/20+ · Категория · Детский · Срочно. Для прайса — диапазон цены.'],
+  ['TABLE','Прайс','Группировка по подспециализации с табами. Цена «от» в каждой группе. Кнопка «Записаться» с автоподстановкой названия услуги.'],
+  ['PRICE','Цены и акции','Было/стало в ₽ + экономия в ₽ + дедлайн. Без скрытых наценок. Цена приёма в карточке врача.'],
+  ['PROC','Процесс','5 шагов: запись → консультация → план → лечение → контроль. «Перезвоним за 15 минут» под формами.'],
+  ['TRUST','Снятие рисков','Лицензия Депздрава · Награды и дипломы (фото) · Договор + чек · Гарантия (стоматология — на работу).'],
+  ['FAQ','Вопросы','Болезненно? Анестезия включена? ДМС? Рассрочка? Дети с какого возраста? Конфиденциально? Деликатно?'],
+  ['NEXT','Запись','Услуга (preselect) + врач (на выбор) + дата → телефон. SLA «перезвоним за 15 мин». Чат WhatsApp/Telegram.'],
+  ['MAP','Карта и маршрут','Интерактивная карта + 4-5 фото пути от метро + парковка + пандус + фото входа в БЦ.'],
+  ['CROSS','Кросс-предложения','«После УЗИ часто записываются на консультацию эндокринолога». Программа «Женский чекап» = УЗИ + анализы + приём.'],
+  ['SPEC','Спецстраницы','Лендинги под чекапы (комплекс), под услуги-флагманы (имплантация, ведение беременности). Свой H1 + кейсы + врачи + цена.']
+];
+
+function makeTag(type) {
+  const c = COMP_COLORS[type] || '#6b6b8a';
+  return `<span class="tag" style="color:${c};background:${c}18">${type}</span>`;
+}
+
+function makeSev(l) {
+  const m = {c:['sev-c','КРИТ'],h:['sev-h','ВЫСОК'],m:['sev-m','СРЕДН']};
+  const [cls,label] = m[l]||['','—'];
+  return `<span class="sev ${cls}">${label}</span>`;
+}
+
+function makeWfBlock(b) {
+  const c = COMP_COLORS[b.tag] || '#6b6b8a';
+  const isProblem = b.p;
+  const bg = isProblem ? 'var(--redD)' : (c+'0a');
+  const border = isProblem ? 'rgba(248,113,113,.3)' : (c+'30');
+  return `<div class="wf-block${isProblem?' problem-block':''}" style="height:${b.h||48}px;background:${bg};border:1px solid ${border};border-left:3px solid ${isProblem?'var(--red)':c}">
+    ${b.tag ? makeTag(b.tag) : ''}
+    <span class="label">${b.label}</span>
+    ${isProblem ? '<span class="warn">!</span>' : ''}
+  </div>`;
+}
+
+function makeWire(blocks, title) {
+  return `<div class="wire">
+    <div class="wire-title">${title}</div>
+    <div class="wire-frame">
+      <div class="wire-chrome">
+        <div class="dot" style="background:#ef4444"></div>
+        <div class="dot" style="background:#fbbf24"></div>
+        <div class="dot" style="background:#22c55e"></div>
+        <div class="wire-bar"></div>
+      </div>
+      ${blocks.map(makeWfBlock).join('')}
+    </div>
+  </div>`;
+}
+
+let activePage = 'home';
+let heroView = 'now';
+
+function renderPages() {
+  const el = document.getElementById('t-pages');
+  const p = pages.find(x=>x.id===activePage);
+  el.innerHTML = `
+    <div class="page-btns">${pages.map(pg=>`<button class="page-btn${pg.id===activePage?' active':''}" data-pg="${pg.id}">${pg.title} <span style="opacity:.5">(${pg.problems.length})</span></button>`).join('')}</div>
+    <div class="url-bar mono">https://${p.url} <a href="https://${p.url}" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:8px">открыть</a></div>
+    <div class="screenshot-wrap" style="margin-bottom:16px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--card)">
+      <div style="padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
+        <div class="dot" style="background:#ef4444"></div><div class="dot" style="background:#fbbf24"></div><div class="dot" style="background:#22c55e"></div>
+        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-left:4px">https://${p.url}</span>
+      </div>
+      <div style="position:relative;min-height:200px;background:#1a1a24">
+        <img
+          src="https://image.thum.io/get/width/1200/crop/700/https://${p.url}"
+          alt="Скриншот ${p.title}"
+          style="width:100%;display:block;opacity:0;transition:opacity .5s"
+          onload="this.style.opacity=1;this.nextElementSibling.style.display='none'"
+          onerror="this.style.display='none';this.nextElementSibling.innerHTML='<div style=padding:40px;text-align:center;color:#6b6b8a>Скриншот не загрузился. <a href=https://${p.url} target=_blank style=color:#818cf8>Открыть сайт</a></div>'"
+        />
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center">
+          <div style="color:var(--muted);font-size:12px">Загрузка скриншота...</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:14px;font-weight:800;color:var(--red);margin-bottom:8px">Почему может не конвертить</div>
+    ${p.problems.map(pr=>`<div class="problem">${makeSev(pr.l)}<span class="text">${pr.t}</span></div>`).join('')}
+    <div class="wires">
+      ${makeWire(p.before,'Как сейчас')}
+      ${makeWire(p.after,'Новая структура')}
+    </div>
+    <div class="hero-cmp">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">СРАВНЕНИЕ HERO-БЛОКА</div>
+      <div class="hero-btns">
+        <button class="hero-btn ${heroView==='now'?'active-now':''}" data-hv="now">HERO сейчас</button>
+        <button class="hero-btn ${heroView==='new'?'active-new':''}" data-hv="new">HERO предложение</button>
+      </div>
+      <div class="hero-text mono ${heroView==='now'?'hero-text-now':'hero-text-new'}">${heroView==='now'?p.heroNow:p.heroNew}</div>
+    </div>
+  `;
+  el.querySelectorAll('.page-btn').forEach(btn=>{
+    btn.onclick = ()=>{ activePage=btn.dataset.pg; heroView='now'; renderPages(); };
+  });
+  el.querySelectorAll('.hero-btn').forEach(btn=>{
+    btn.onclick = ()=>{ heroView=btn.dataset.hv; renderPages(); };
+  });
+}
+
+function renderBn() {
+  document.getElementById('t-bn').innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:16px">Узкие горлышки — приоритизированный список</div>
+    ${bottlenecks.map((b,i)=>`<div class="bn-item">
+      <div class="bn-num">${i+1}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">${makeSev(b.l)}<span class="bn-title">${b.title}</span></div>
+        <div class="bn-desc">${b.desc}</div>
+        <div class="bn-fix"><strong>Решение:</strong> ${b.fix}</div>
+      </div>
+    </div>`).join('')}`;
+}
+
+function renderTodo() {
+  const quick = [
+    ['H1 главной с интентом + 2 CTA + унификация цифр (5000 приёмов/год)','Главная','1 день','+20-30% глубина','green'],
+    ['Подключить виджет отзывов с ПроДокторов/Яндекс.Карт на главную','Главная','4 часа','+15-25% доверие','green'],
+    ['В карточках направлений добавить цену «от X ₽» + статус записи','Главная','1 день','+10-15% точность','green'],
+    ['Сроки и «было/стало в ₽» во всех 4 акциях','Акции','3 часа','+15% записей по акции','green'],
+    ['Условия программы лояльности открыто, без «Подробнее»','Акции, футер','2 часа','+10% удержание','green'],
+    ['SLA «Перезвоним за 15 минут» рядом с каждой формой','Все','2 часа','+10-15% заявок','green'],
+    ['Кнопка «Записаться» в прайсе подставляет название услуги в форму','/services, направ.','1-2 дня','снять трение','green'],
+    ['Интерактивная карта Яндекс на странице контактов','Контакты','2 часа','снять путаницу','green'],
+    ['Цена приёма у каждого врача в карточке','Врачи','1 день','-1 клик до решения','green'],
+    ['4 телефона разделить по задачам: запись / ДМС / экстренно','Контакты, шапка','2 часа','снять путаницу','green']
+  ];
+  const struct = [
+    ['Блок IDENTIFY на главной: 4 пути (острая / чекап / направление / врач)','Главная','5-7 дн','+15-25% сегментация','orange'],
+    ['Группировка прайса на /services и страницах направлений по подразделам','Все','5-7 дн','UX каталога','orange'],
+    ['Топ-3-5 врачей на каждой странице направления (стомат., гинек. и т.д.)','Направления','5-7 дн','+20% доверие','orange'],
+    ['Свободные слоты в карточке врача (интеграция с CRM/расписанием)','Врачи','7-14 дн','-50% звонков-уточнений','orange'],
+    ['10-15 работ «до/после» по стоматологии (с согласия)','Стомат.','5-7 дн','+25-40% записей','orange'],
+    ['FAQ-блоки на каждой странице направления (болезненно? ДМС? рассрочка?)','Направления','3-5 дн','+10-15% доверие','orange'],
+    ['Лендинги под чекапы (программы) с ценой комплекса','SEO','7-10 дн','новый трафик','orange'],
+    ['Маршрут от метро с фото-инструкцией + парковка','Контакты','3-5 дн','снять трение','orange'],
+    ['Виджет отзывов в карточках врачей (с ПроДокторов или ручной)','Врачи','5-7 дн','+15-25% выбор','orange'],
+    ['Программы «Женский чекап», «Чекап мужчины», «Чекап ребёнка»','SEO','7-10 дн','+15-20% средний чек','orange'],
+    ['Кросс-предложения в карточках услуг («после УЗИ — эндокринолог»)','Направления','3-5 дн','+10% AOV','orange'],
+    ['Чат с врачом / координатором в WhatsApp прямо со страницы врача','Врачи','3-5 дн','+10-15% лидов','orange']
+  ];
+  const content = [
+    'Получить от 20 пациентов отзывы (с согласия) на ПроДокторов / Яндекс.Карты — мотивация скидкой 10% на следующий приём',
+    '10-15 фото работ «до/после» по стоматологии: виниры, отбеливание, имплантация, реставрация, элайнеры',
+    'Фотосессия врачей в кабинете (живые фото, не на белом фоне) — 23 врача',
+    'Сфотографировать дипломы и награды (23+), сделать галерею',
+    '4-5 фото маршрута от метро Маяковская выход №3 до входа в клинику',
+    'Фото входа в БЦ, ресепшна, типичных кабинетов (если ещё не сделано — есть 15 фото интерьера)',
+    'Описание программ чекапов: что входит, по каким показаниям, сколько занимает, цена комплекса vs по отдельности',
+    'Видео-отзывы 30-секундных от 10-15 пациентов (мотивация — скидка на следующий приём)'
+  ];
+  document.getElementById('t-todo').innerHTML = `
+    <div class="section-title" style="color:var(--green)">Быстрые правки (1-3 дня)</div>
+    ${quick.map(f=>`<div class="todo-row"><span class="what">${f[0]}</span><span style="color:var(--muted)">${f[1]}</span><span style="color:var(--cyan)">${f[2]}</span><span style="color:var(--${f[4]});font-weight:700">${f[3]}</span></div>`).join('')}
+    <div class="section-title" style="color:var(--orange);margin-top:24px">Структурные изменения (1-2 недели)</div>
+    ${struct.map(f=>`<div class="todo-row"><span class="what">${f[0]}</span><span style="color:var(--muted)">${f[1]}</span><span style="color:var(--cyan)">${f[2]}</span><span style="color:var(--${f[4]});font-weight:700">${f[3]}</span></div>`).join('')}
+    <div class="section-title" style="color:var(--purple);margin-top:24px">Контент (участие клиента)</div>
+    ${content.map((t,i)=>`<div class="content-task"><span class="num">${i+1}</span><span>${t}</span></div>`).join('')}`;
+}
+
+function renderLib() {
+  document.getElementById('t-lib').innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px">Библиотека конверсионных компонентов</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Стандартизированные блоки для сборки каждой страницы. Адаптировано под многопрофильную медклинику.</div>
+    <div class="comp-grid">${compLib.map(([tag,title,desc])=>{
+      const c = COMP_COLORS[tag]||'#6b6b8a';
+      return `<div class="comp-card" style="border-left:3px solid ${c}">
+        ${makeTag(tag)}
+        <div class="title">${title}</div>
+        <div class="desc">${desc}</div>
+      </div>`;
+    }).join('')}</div>`;
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const id = tab.dataset.tab;
+    ['overview','pages','bn','todo','lib'].forEach(t=>{
+      document.getElementById('t-'+t).classList.toggle('hidden', t!==id);
+    });
+    if(id==='pages') renderPages();
+    if(id==='bn') renderBn();
+    if(id==='todo') renderTodo();
+    if(id==='lib') renderLib();
+  };
+});
+
+renderPages(); renderBn(); renderTodo(); renderLib();
+</script>
+</body>
+</html>

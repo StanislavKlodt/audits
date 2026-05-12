@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRO-Аудит · td-mc.ru</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Manrope:wght@400;600;800&display=swap');
+:root {
+  --bg: #08080d; --card: #111118; --border: #1e1e2e; --text: #d4d4e8;
+  --muted: #6b6b8a; --white: #f0f0ff; --accent: #818cf8; --accentD: #818cf822;
+  --red: #f87171; --redD: #f8717115; --orange: #fbbf24; --orangeD: #fbbf2415;
+  --green: #34d399; --greenD: #34d39915; --cyan: #22d3ee; --cyanD: #22d3ee15;
+  --purple: #a78bfa; --pink: #f472b6; --teal: #2dd4bf;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: 'Manrope', system-ui, sans-serif; line-height: 1.6; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+.header { background: linear-gradient(135deg, #818cf810, #f8717108); border-bottom: 1px solid var(--border); padding: 20px 24px; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; max-width: 1100px; margin: 0 auto; }
+.header h1 { font-size: 28px; font-weight: 900; color: var(--white); margin-top: 2px; }
+.header .sub { font-size: 11px; color: var(--accent); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+.header .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stats { display: flex; gap: 8px; }
+.stat { text-align: center; padding: 6px 16px; border-radius: 8px; }
+.stat .n { font-size: 20px; font-weight: 900; }
+.stat .l { font-size: 9px; font-weight: 700; letter-spacing: .06em; }
+
+.tabs { display: flex; border-bottom: 1px solid var(--border); max-width: 1100px; margin: 0 auto; overflow-x: auto; }
+.tab { padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; font-family: inherit; transition: all .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab .badge { font-size: 10px; background: var(--card); padding: 1px 7px; border-radius: 10px; margin-left: 5px; }
+.tab.active .badge { background: var(--accentD); color: var(--accent); }
+
+.content { padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+.hidden { display: none !important; }
+
+.page-btns { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.page-btn { padding: 7px 16px; font-size: 12px; font-weight: 700; background: var(--card); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: inherit; transition: all .15s; }
+.page-btn:hover { background: var(--border); }
+.page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.url-bar { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; background: var(--card); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 14px; word-break: break-all; }
+
+.problem { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; }
+.problem .text { font-size: 12px; line-height: 1.6; }
+.sev { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 3px; letter-spacing: .08em; white-space: nowrap; flex-shrink: 0; }
+.sev-c { color: var(--red); background: var(--redD); }
+.sev-h { color: var(--orange); background: var(--orangeD); }
+.sev-m { color: var(--cyan); background: var(--cyanD); }
+
+.wires { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+.wire { flex: 1; min-width: 300px; }
+.wire-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+.wire-frame { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
+.wire-chrome { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; }
+.wire-bar { flex: 1; height: 14px; background: var(--card); border-radius: 4px; margin-left: 8px; }
+
+.wf-block { border-radius: 6px; padding: 0 10px; display: flex; align-items: center; gap: 6px; margin-bottom: 3px; position: relative; overflow: hidden; }
+.wf-block .label { font-size: 11px; }
+.wf-block.problem-block { border-color: rgba(248,113,113,.3) !important; }
+.wf-block.problem-block .label { color: var(--red); font-weight: 600; }
+.wf-block .warn { position: absolute; right: 8px; font-size: 9px; color: var(--red); font-weight: 700; }
+
+.tag { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 3px; letter-spacing: .04em; white-space: nowrap; flex-shrink: 0; }
+
+.hero-cmp { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+.hero-btns { display: flex; gap: 8px; margin-bottom: 12px; }
+.hero-btn { padding: 5px 14px; font-size: 11px; font-weight: 700; border-radius: 5px; cursor: pointer; font-family: inherit; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all .15s; }
+.hero-btn.active-now { background: var(--redD); color: var(--red); border-color: rgba(248,113,113,.3); }
+.hero-btn.active-new { background: var(--greenD); color: var(--green); border-color: rgba(52,211,153,.3); }
+.hero-text { font-size: 13px; line-height: 1.8; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; padding: 12px; background: var(--bg); border-radius: 6px; }
+.hero-text-now { color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+.hero-text-new { color: var(--green); border: 1px solid rgba(52,211,153,.2); }
+
+.bn-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 8px; display: flex; gap: 14px; }
+.bn-num { font-size: 20px; font-weight: 900; color: var(--border); min-width: 28px; text-align: right; line-height: 1; }
+.bn-title { font-size: 14px; font-weight: 800; color: var(--white); }
+.bn-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 4px 0 8px; }
+.bn-fix { font-size: 12px; color: var(--green); line-height: 1.5; padding: 6px 10px; background: var(--greenD); border-radius: 5px; border-left: 3px solid var(--green); }
+
+.section-title { font-size: 15px; font-weight: 800; margin-bottom: 12px; }
+.todo-row { display: grid; grid-template-columns: 1fr 110px 80px 140px; gap: 8px; align-items: center; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; margin-bottom: 4px; }
+.todo-row .what { font-weight: 600; }
+.content-task { padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.content-task .num { color: var(--purple); font-weight: 800; }
+
+.comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.comp-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.comp-card .title { font-size: 13px; font-weight: 700; color: var(--white); margin: 6px 0 4px; }
+.comp-card .desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+.overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.ov-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.ov-card .label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+.ov-card p { font-size: 13px; line-height: 1.7; }
+.finding { background: linear-gradient(135deg, rgba(248,113,113,.06), rgba(129,140,248,.06)); border: 1px solid rgba(248,113,113,.2); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.finding h3 { font-size: 16px; font-weight: 800; color: var(--red); margin-bottom: 10px; }
+.finding p { font-size: 14px; line-height: 1.8; }
+.segment { font-size: 12px; padding: 5px 10px; background: var(--accentD); border-radius: 6px; border-left: 3px solid var(--accent); margin-bottom: 4px; }
+
+@media (max-width: 700px) {
+  .wires { flex-direction: column; }
+  .todo-row { grid-template-columns: 1fr; gap: 4px; }
+  .header-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div>
+      <div class="sub">CRO-аудит многостраничного сайта</div>
+      <h1>td-mc.ru</h1>
+      <div class="desc">Торговый Дом Сеток — производство и продажа металлических сеток · Москва + Электросталь · 7 страниц · 27 рекомендаций</div>
+    </div>
+    <div class="stats">
+      <div class="stat" style="background:var(--redD)"><div class="n" style="color:var(--red)">3</div><div class="l" style="color:var(--red)">КРИТ</div></div>
+      <div class="stat" style="background:var(--orangeD)"><div class="n" style="color:var(--orange)">14</div><div class="l" style="color:var(--orange)">ВЫСОК</div></div>
+      <div class="stat" style="background:var(--cyanD)"><div class="n" style="color:var(--cyan)">10</div><div class="l" style="color:var(--cyan)">СРЕДН</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-tab="overview">Обзор</button>
+  <button class="tab" data-tab="pages">Аудит страниц <span class="badge">27</span></button>
+  <button class="tab" data-tab="bn">Узкие горлышки <span class="badge">10</span></button>
+  <button class="tab" data-tab="todo">ТЗ на улучшения <span class="badge">21</span></button>
+  <button class="tab" data-tab="lib">Компоненты</button>
+</div>
+
+<div class="content" id="t-overview">
+  <div class="overview-grid">
+    <div class="ov-card">
+      <div class="label">Бизнес</div>
+      <p><strong>ООО «Торговый Дом Металлических Сеток» (TDMC)</strong> — производство и оптовая поставка тканых и сварных металлических сеток (нержавейка AISI 304/316, латунь, медь, бронза, никель, нихром, фехраль). 25 лет опыта, 2500+ клиентов, ISO 9001:2015. Склады в Москве и Электростали, доставка по РФ и ЕАЭС. 700+ типоразмеров в наличии + изготовление под заказ от 100 м.п. <strong>Полноценный e-commerce</strong>: цены за м² и за рулон, наличие, корзина, калькулятор отмотки, ТУ/ГОСТ.</p>
+    </div>
+    <div class="ov-card">
+      <div class="label">Целевая аудитория (AJTBD)</div>
+      <div class="segment">A: Снабженец завода — закупает по ГОСТу регулярно, нужен счёт ЮЛ, реквизиты, накладные, отсрочка</div>
+      <div class="segment">B: Инженер-конструктор — подбирает под задачу (фильтрация, экранирование, сито), нужны ТУ и характеристики</div>
+      <div class="segment">C: Закупщик мукомольного / пищевого производства — ищет ГОСТ-номер для замены изношенной сетки</div>
+      <div class="segment">D: Импортозамещение — ищет аналог зарубежной mesh-классификации (Mesh 100, Mesh 200)</div>
+      <div class="segment">E: Розничный мастер / частник — нужен раскрой 1-3 м² для ремонта, фильтра, проекта</div>
+    </div>
+    <div class="ov-card">
+      <div class="label">Охват аудита</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Главная</span><span style="color:var(--muted)">5 проблем</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Каталог</span><span style="color:var(--muted)">4 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Категория-распутье</span><span style="color:var(--muted)">4 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Категория-листинг</span><span style="color:var(--muted)">5 проблем</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Карточка товара</span><span style="color:var(--muted)">4 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Производство</span><span style="color:var(--muted)">3 проблемы</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>Доставка</span><span style="color:var(--muted)">2 проблемы</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="finding">
+    <h3>Главная находка</h3>
+    <p>На сайте <strong>есть полноценный e-commerce</strong>: на 3-м уровне каталога — таблицы товаров с ценами за м² и за рулон, наличие, кнопка «Оформить заказ», калькулятор отмотки (наценка +30% до 3 м², +15% до рулона), карточки товара с фото, ГОСТ/ТУ, AISI 304, cross-sell. <strong>Это сильный B2B-магазин, который сам себя прячет.</strong></p>
+    <p style="margin-top:12px"><strong>Корневая проблема — структура каталога-распутья.</strong> Часть категорий 2-го уровня — это листинги с ценами (латунь, рифленая, фильтровая, сварная). Другая часть — распутья из 4 подкатегорий без цен (тканая нерж., цветные металлы). Снабженец, который кликнул «Сетка тканая нержавеющая» и ожидал увидеть таблицу типоразмеров, попадает на страницу с 4 плитками и SEO-стеной — без цен и без главного блока «выбрать и купить». Чтобы добраться до товаров, нужно ещё один клик. Это лишний шаг, на котором теряются лиды.</p>
+    <p style="margin-top:12px"><strong>Второе горлышко — отсутствие маршрута для инженера/снабженца под ЗАДАЧУ.</strong> На сайте есть «Mesh-классификация» (импортозамещение) и «Для мельничных комплексов» — золотые сегменты с уникальной болью клиента. Сейчас они прячутся как подкатегории внутри тканой нержавейки. Нужны самостоятельные посадочные «Импортозамещение mesh» и «Сетки для мукомолов» с ГОСТ-таблицами, портфолио заводов-клиентов и отдельной формой расчёта.</p>
+    <p style="margin-top:12px"><strong>Третье — слабая монетизация трафика.</strong> Главная и страницы-распутья дают красивую картинку (25 лет, ISO, 2500+), но не направляют сегмент. Нет блока «вы кто» (снабженец/инженер/мукомолы/импорт/розница), нет квиза подбора, нет калькулятора стоимости рулона на главной. Сильный e-commerce на 3-м уровне работает на тех, кто уже знает что ищет, и теряет тех, кто пришёл с задачей, а не с артикулом.</p>
+  </div>
+  <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px">Превью главной страницы</div>
+  <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--card);margin-bottom:20px">
+    <div style="padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
+      <div style="width:6px;height:6px;border-radius:50%;background:#ef4444"></div><div style="width:6px;height:6px;border-radius:50%;background:#fbbf24"></div><div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div>
+      <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-left:4px">td-mc.ru</span>
+    </div>
+    <div style="position:relative;min-height:180px;background:#1a1a24">
+      <img src="https://image.thum.io/get/width/1200/crop/600/https://td-mc.ru/" alt="Скриншот главной" style="width:100%;display:block;opacity:0;transition:opacity .5s" onload="this.style.opacity=1;this.nextElementSibling.style.display='none'" onerror="this.nextElementSibling.innerHTML='Скриншот не загрузился'" />
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Загрузка...</div>
+    </div>
+  </div>
+</div>
+<div class="content hidden" id="t-pages"></div>
+<div class="content hidden" id="t-bn"></div>
+<div class="content hidden" id="t-todo"></div>
+<div class="content hidden" id="t-lib"></div>
+
+<script>
+const COMP_COLORS = {
+  HERO:'#818cf8', PROOF:'#22d3ee', PORTFOLIO:'#a78bfa', TRUST:'#34d399',
+  QUIZ:'#fbbf24', FAQ:'#f472b6', NEXT:'#2dd4bf', CROSS:'#c084fc',
+  ID:'#fb923c', PRICE:'#4ade80', PROC:'#60a5fa', WEAK:'#f87171',
+  OK:'#6b6b8a', BLOG:'#6b6b8a', SEO:'#f87171', NAV:'#6b6b8a',
+  FILTER:'#22d3ee', CATALOG:'#818cf8', GOST:'#a78bfa', SPEC:'#22d3ee',
+  TABLE:'#4ade80', CARD:'#a78bfa', CALC:'#fbbf24'
+};
+
+const pages = [
+  { id:'home', title:'Главная', url:'td-mc.ru/',
+    problems: [
+      {l:'h',t:'9 продуктовых категорий показаны как плитки равной важности — нет иерархии. Снабженец не знает, какие категории — листинги с ценами, а какие — распутья ещё на уровень глубже'},
+      {l:'h',t:'Нет блока IDENTIFY: «вы инженер? снабженец? мукомолы? нужно импортозамещение mesh? нужна розница до 3 м²?». Каждый сегмент ищет своё, но сайт не направляет'},
+      {l:'h',t:'4 stat-бокса (700+, 2500+, R&D, индзаказ) — абстрактны. Нет «что я могу сделать прямо сейчас»: цены от X, наличие, скачать прайс, калькулятор'},
+      {l:'h',t:'H1 «Сетки из нерж. проволоки и цветных металлов» — описательный. Нет УТП, нет CTA рядом. Конкуренты пишут «купить сетку с доставкой за 1-3 дня»'},
+      {l:'m',t:'Блок новостей и акций (4 элемента) занимает экран, но не двигает конверсию. Лучше заменить на топ-10 ходовых типоразмеров с ценами или калькулятор'}
+    ],
+    before: [
+      {tag:'HERO',label:'H1 описательный + 4 stat-бокса (700+, 2500+, R&D, индзаказ)',h:64,p:1},
+      {tag:'WEAK',label:'9 категорий равной значимости — паралич выбора + нет цен',h:72,p:1},
+      {tag:'OK',label:'Новости и акции (4 элемента)',h:44},
+      {tag:'OK',label:'Описание компании + возможности',h:40},
+      {tag:'OK',label:'Гарантии качества',h:36},
+      {tag:'OK',label:'Доставка и раскрой',h:36},
+      {tag:'OK',label:'Индивидуальные заказы',h:36},
+      {tag:'OK',label:'6 преимуществ',h:36},
+      {tag:'OK',label:'Блог (4 поста)',h:40},
+      {tag:'OK',label:'FAQ',h:36}
+    ],
+    after: [
+      {tag:'HERO',label:'H1: «Металлические сетки от производителя — 700+ в наличии». 2 CTA: подбор / прайс',h:64},
+      {tag:'PROOF',label:'25 лет • ISO 9001 • Со склада 1-3 дня • от 500₽/м² • AISI 304/316',h:36},
+      {tag:'ID',label:'5 путей: Снабженец / Инженер / Мукомолы / Импортозамещение / Розница',h:52},
+      {tag:'CATALOG',label:'Топ-9 категорий с ценами «от» и пометкой «листинг» / «подкатегории»',h:64},
+      {tag:'QUIZ',label:'Подбор сетки за 4 шага: задача → размер ячейки → материал → объём',h:48},
+      {tag:'TABLE',label:'Топ-15 ходовых типоразмеров: ГОСТ + ячейка + цена + «в корзину»',h:60},
+      {tag:'PORTFOLIO',label:'Логотипы клиентов-заводов + 3-5 кейсов индзаказов',h:52},
+      {tag:'TRUST',label:'ISO + ТУ + отзывы с реквизитами компаний',h:40},
+      {tag:'PROC',label:'Запрос → расчёт за 1 ч → счёт → отгрузка со склада 1-3 дня',h:40},
+      {tag:'NEXT',label:'Форма: «Получить расчёт за 1 час» — артикул/ГОСТ + объём + телефон',h:44}
+    ],
+    heroNow:'«Сетки из нержавеющей проволоки\nи цветных металлов»\n\n[700+] [2500+] [R&D] [Индзаказ]\n\n(Дальше — 9 одинаковых плиток-категорий\nбез цен, без иерархии, без «листинг или\nраспутье». Снабженец гадает куда кликать)',
+    heroNew:'«Металлические сетки от производителя —\n700+ типоразмеров в наличии,\nизготовление от 100 м.п.»\n\nНержавейка AISI 304/316, латунь, медь, бронза.\nГОСТ 3826/9074, ТУ. ISO 9001.\nОт 500 ₽/м². Со склада 1-3 дня.\n\nCTA: Подобрать сетку  |  Скачать прайс'
+  },
+  { id:'catalog', title:'Каталог', url:'td-mc.ru/catalog/',
+    problems: [
+      {l:'h',t:'9 крупных плиток без подсказки «листинг с ценами или ещё одно распутье». Латунь и сварная — листинги с ценами, тканая нерж. и цветные металлы — распутья. Пользователь не знает, какой клик ведёт к покупке, а какой — ещё на уровень глубже'},
+      {l:'h',t:'Нет фильтра по применению (фильтрация / просеивание / экранирование / сито / декор) — только по материалу. Снабженец ищет сетку по ЗАДАЧЕ, а не по материалу'},
+      {l:'h',t:'Нет глобального квиза подбора. Конкуренты с квизом «какая сетка вам нужна?» получат лидов первыми'},
+      {l:'m',t:'Описания категорий короткие — нет «когда использовать», «отличие от соседней», «топ-3 типоразмера с ценами». Не помогает решить, в какую кликнуть'}
+    ],
+    before: [
+      {tag:'NAV',label:'Хлебные крошки + поиск + регистрация',h:28},
+      {tag:'WEAK',label:'9 плиток-категорий без признака «листинг/распутье» и без цен «от»',h:80,p:1},
+      {tag:'OK',label:'Новости компании + блок «Изготовление по заказу»',h:48},
+      {tag:'OK',label:'FAQ',h:36},
+      {tag:'OK',label:'Футер',h:32}
+    ],
+    after: [
+      {tag:'HERO',label:'«Каталог: 700+ сеток» + поле подбора по ГОСТу/артикулу/задаче',h:56},
+      {tag:'PROOF',label:'Со склада 1-3 дня • от 500₽/м² • ГОСТ + ТУ + AISI 304/316',h:36},
+      {tag:'ID',label:'Подобрать по ЗАДАЧЕ: фильтрация / просеивание / экранирование / декор',h:48},
+      {tag:'QUIZ',label:'Квиз: материал → ячейка → ширина → объём → расчёт за 1 ч',h:48},
+      {tag:'CATALOG',label:'9 категорий: каждая с ценой «от» + пометкой «350+ позиций» / «4 раздела»',h:80},
+      {tag:'TABLE',label:'Топ-10 ходовых SKU с ценой и «в корзину» прямо здесь',h:56},
+      {tag:'TRUST',label:'ГОСТ-таблица + сертификаты ISO + отзывы заводов',h:40},
+      {tag:'NEXT',label:'Форма «Расчёт за 1 час» с прикреплением чертежа/ТЗ',h:44}
+    ],
+    heroNow:'«Производство металлических сеток»\n(заголовок-логотип, не H1)\n\n9 одинаковых плиток-категорий:\nТканая нерж. → распутье\nЛатунь → листинг с ценами\nСварная → листинг с ценами\nЦв. металлы → распутье\nФильтровая → листинг с ценами\n...\n\nПользователь не различает их без клика',
+    heroNew:'«Каталог: 700+ металлических сеток\nот производителя»\n\n[Поиск: ГОСТ / артикул / mesh-номер]\n\nПодобрать по применению:\n[Фильтрация] [Просеивание] [Экранирование]\n[Декор] [Армирование] [Сита]\n\nКаждая категория: цена «от X ₽/м²»\n+ количество позиций в наличии\n\nCTA: Запустить подбор за 1 минуту'
+  },
+  { id:'cat-hub', title:'Категория-распутье (тканая нерж.)', url:'td-mc.ru/catalog/setka-tkanaya-nerzhaveyushchaya/',
+    problems: [
+      {l:'c',t:'Это страница-РАСПУТЬЕ из 4 подкатегорий, но пользователь, кликнув «Сетка тканая нержавеющая», ожидает СРАЗУ листинг с ценами. Лишний шаг = лишний шанс уйти'},
+      {l:'h',t:'Цена «от 500 руб/м²» спрятана в FAQ внизу. На главном экране — только 4 плитки. Цена должна быть в hero, в каждой плитке-подкатегории, в карточке топ-5 позиций'},
+      {l:'h',t:'Нет краткого превью «топ-10 ходовых типоразмеров» прямо тут — пользователь, который ищет конкретную ячейку, должен ещё раз кликнуть в одну из 4 веток'},
+      {l:'m',t:'4 плитки описывают подкатегории но не помогают выбрать: «общего назначения / рифленая / mesh / для мукомолов» — нужны характеристики и применение в каждой'}
+    ],
+    before: [
+      {tag:'NAV',label:'Хлебные крошки + параметры отбора (мин/макс ячейка)',h:28},
+      {tag:'OK',label:'Подарки к товарам раздела (промо-блок)',h:36},
+      {tag:'WEAK',label:'4 плитки-подкатегории без цен и без указания «N позиций в наличии»',h:72,p:1},
+      {tag:'OK',label:'Кнопки «Скачать каталог» / «Скачать прайс»',h:32},
+      {tag:'WEAK',label:'Стена SEO-описания: переплетение, марки, ГОСТы',h:80,p:1},
+      {tag:'OK',label:'FAQ (4 вопроса)',h:40},
+      {tag:'OK',label:'Преимущества компании (6 пунктов)',h:44},
+      {tag:'OK',label:'Контакт специалиста с фото',h:40}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 + цена «от 500 ₽/м²» + «350+ позиций в наличии» + 2 CTA',h:60},
+      {tag:'PROOF',label:'ГОСТ 3826/3187 • AISI 304/316/12Х18Н10Т • от 0.026 до 20 мм',h:36},
+      {tag:'ID',label:'4 плитки-подкатегории с ценой «от» и количеством позиций в каждой',h:60},
+      {tag:'TABLE',label:'Топ-15 ходовых типоразмеров прямо тут: ячейка/проволока/цена/корзина',h:80},
+      {tag:'FILTER',label:'Фильтры (для топ-15): ячейка, проволока, марка, переплетение',h:36},
+      {tag:'PORTFOLIO',label:'Где применяют: фото на объектах + клиенты-отрасли',h:48},
+      {tag:'TRUST',label:'Сертификаты ISO + контакт специалиста (липкий)',h:40},
+      {tag:'FAQ',label:'5 вопросов: марка стали, наличие, минзаказ, доставка',h:40},
+      {tag:'NEXT',label:'Форма: ГОСТ № или ячейка/проволока + объём + телефон',h:44},
+      {tag:'CROSS',label:'Сетка фильтровая, цветные металлы, сварная',h:32}
+    ],
+    heroNow:'«Сетка тканая нержавеющая»\n\n4 плитки-подкатегории:\n• Общего назначения (ячейка 0.026–20 мм)\n• Из рифленой проволоки\n• Зарубежной классификации (mesh)\n• Для мельничных комплексов\n\n(Цены нет. Чтобы увидеть товары —\nеще 1 клик в любую плитку)',
+    heroNew:'«Сетка тканая нержавеющая —\nГОСТ 3826/3187, от 500 ₽/м²»\n\n350+ типоразмеров в наличии.\nAISI 304/316, ячейка 0.026–20 мм.\nОтгрузка со склада 1-3 дня.\n\n4 раздела (общая, рифленая, mesh, мукомолы)\n+ Топ-15 ходовых типоразмеров прямо здесь.\n\nCTA: Скачать прайс  |  Рассчитать заказ'
+  },
+  { id:'cat-list', title:'Категория-листинг (общ. назначения)', url:'td-mc.ru/catalog/setki-obshchego-naznacheniya-yacheyka-ot-0026-do-20-mm/',
+    problems: [
+      {l:'h',t:'Сильный e-commerce, но фильтр только по ячейке (мм). Нет фильтра по марке стали (304/316), переплетению (полотняное/саржевое), ширине рулона, наличию — а профи фильтруют именно так'},
+      {l:'h',t:'Только пагинация (12 страниц), без сортировки по цене / по ячейке / по популярности. На таблице со 120+ позиций отсутствие сортировки — ад для снабженца'},
+      {l:'h',t:'Нет CTA «получить весь прайс на email» прямо в hero. Снабженец, увидевший таблицу, часто хочет скачать excel и считать в нём — это сразу должно быть видно'},
+      {l:'m',t:'Цены без НДС в карточке товара, но в листинге — «с НДС». Несогласованность смущает закупщика B2B (ему критично видеть НДС/без НДС последовательно)'},
+      {l:'m',t:'Нет виджета «срочно нужно — звонок» / Telegram прямо у таблицы. Только в шапке. На длинной странице со 120+ строк специалист уезжает за экран'}
+    ],
+    before: [
+      {tag:'NAV',label:'Хлебные крошки + поиск + параметры',h:28},
+      {tag:'FILTER',label:'Фильтр только по ячейке (мм). Нет фильтров по марке/переплетению/ширине',h:40,p:1},
+      {tag:'TABLE',label:'Таблица 16 товаров: фото + поставка + ячейка + проволока + цена/м² + рулон + корзина',h:96},
+      {tag:'NAV',label:'Пагинация: 12 страниц (~120+ позиций)',h:28,p:1},
+      {tag:'OK',label:'Описание / SEO-блок',h:60},
+      {tag:'OK',label:'Блог (16 статей)',h:36},
+      {tag:'OK',label:'Информация о производстве + 6 преимуществ',h:44}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 + «120+ типоразмеров от 1083 до 4856 ₽/м²» + 2 CTA: прайс/расчёт',h:60},
+      {tag:'PROOF',label:'Со склада 1-3 дня • Раскрой от 1 м² • +30% при отмотке до 3 м²',h:36},
+      {tag:'FILTER',label:'Фильтры: ячейка | проволока | марка стали | переплетение | ширина | наличие',h:48},
+      {tag:'TABLE',label:'Таблица с сортировкой: ↑↓ по цене, ячейке, популярности. + lazy-load',h:96},
+      {tag:'CALC',label:'Калькулятор: длина × ширина → стоимость + наценка отмотки + срок',h:48},
+      {tag:'TRUST',label:'Контакт специалиста липкий + сертификаты ISO/ТУ',h:40},
+      {tag:'PROC',label:'Процесс отмотки: «закажете 5 м² — отрежем за 1 день, +15% к цене»',h:40},
+      {tag:'FAQ',label:'НДС, минзаказ, документы, отмотка, рулон vs м²',h:40},
+      {tag:'NEXT',label:'Виджет: «прайс на email» + «не нашли — поможем» + Telegram',h:44},
+      {tag:'CROSS',label:'Mesh-классификация, рифленая, для мукомолов',h:32}
+    ],
+    heroNow:'«Сетка из нерж. стали (от 0,026 до 30 мм)»\n\nФильтр только по ячейке.\nТаблица: 16 строк × 12 страниц = ~120+ SKU.\nКолонки: фото | поставка | ячейка |\n  проволока | цена/м² | рулон | заказ\n\nЦен «с НДС» в листинге, «без НДС» в карточке.\nНет сортировки. Нет «прайс на email».',
+    heroNew:'«120+ типоразмеров нерж. сетки —\nот 1083 до 4856 ₽/м²»\n\nAISI 304/316. Ячейка 0.026–20 мм.\nПолотно/саржа. Со склада 1-3 дня.\nРаскрой от 1 м² (+30%), от 3 м² (+15%).\n\nФильтры: ячейка | проволока | марка |\n  переплетение | ширина | наличие\nСортировка: цена ↑↓ | ячейка ↑↓ | популярные\n\nCTA: Прайс на email  |  Калькулятор'
+  },
+  { id:'card', title:'Карточка товара', url:'td-mc.ru/catalog/setki-obshchego-naznacheniya-yacheyka-ot-0026-do-20-mm/setka-nerzhaveyushchaya-004x003-sarzhevaya/',
+    problems: [
+      {l:'h',t:'Цена «2 983 ₽/м² без НДС» — на листинге было «с НДС». Несогласованность: B2B-снабженец проверяет цену 2 раза, частник пугается «доплатой 20%»'},
+      {l:'h',t:'Кнопка «Загрузить файл реквизитов» — необычный микро-CTA, который, видимо, нужен для оформления счёта ЮЛ. Без объяснения «зачем загружать ИНН» это барьер'},
+      {l:'m',t:'Похожие позиции (5 шт) и Популярные (4 шт) — это разные ячейки, не альтернативы текущей. Лучше: «такая же ячейка из стали 316», «такая же ячейка но рифленая», «то же применение, дешевле» — основанные на ЗАДАЧЕ, а не на размере'},
+      {l:'m',t:'Нет блока «Применение» с конкретными примерами «эту ячейку 0,04×0,03 чаще всего берут для X, Y, Z». Снабженец-новичок (например, инженер с задачей «отфильтровать пыль 50 мкм») не понимает «эта ли мне сетка»'}
+    ],
+    before: [
+      {tag:'OK',label:'Галерея 5 фото + название + артикул + ТУ',h:48},
+      {tag:'OK',label:'Цена 2 983 ₽/м² (без НДС) + рулон 68 820 ₽ + «В наличии»',h:48},
+      {tag:'WEAK',label:'Цена «без НДС», но в листинге была «с НДС» — несогласованность',h:40,p:1},
+      {tag:'OK',label:'Характеристики в 2 колонки: ячейка/проволока/материал/ГОСТ/переплетение/ширина',h:64},
+      {tag:'OK',label:'Калькулятор отмотки: до 3 м² +30%, до рулона +15%',h:44},
+      {tag:'OK',label:'Кнопка «Оформить заказ» + «Заказать раскрой»',h:40},
+      {tag:'WEAK',label:'«Загрузить файл реквизитов» без объяснения зачем',h:36,p:1},
+      {tag:'OK',label:'Блок доставки',h:36},
+      {tag:'OK',label:'Похожие позиции (4 разной ячейки) + Популярные в разделе (4)',h:44},
+      {tag:'OK',label:'Контакт специалиста с фото',h:40},
+      {tag:'OK',label:'Применение: фильтрация жидкостей, газов, сепарация',h:40}
+    ],
+    after: [
+      {tag:'HERO',label:'H1 + цена согласованно «с НДС» (или toggle) + «в наличии» + срок',h:60},
+      {tag:'PRICE',label:'Toggle: «с НДС / без НДС» — для физ.лиц/юр.лиц',h:36},
+      {tag:'CALC',label:'Калькулятор: размер ↔ стоимость + наценка отмотки + срок',h:48},
+      {tag:'TABLE',label:'Характеристики + типичные применения «эту ячейку берут для X/Y/Z»',h:80},
+      {tag:'PROC',label:'Кнопка «Получить счёт» (для ЮЛ) с пояснением «зачем реквизиты»',h:40},
+      {tag:'TRUST',label:'Сертификаты + паспорт качества + образцы (отправим)',h:40},
+      {tag:'CROSS',label:'Альтернативы по ЗАДАЧЕ: «то же фильтр 50 мкм, но дешевле / 316»',h:48},
+      {tag:'FAQ',label:'5 вопросов: НДС, отмотка, минзаказ, паспорт качества, возврат',h:40},
+      {tag:'NEXT',label:'«Не подходит? Подберём» — форма с задачей и контактом',h:40}
+    ],
+    heroNow:'«Сетка из нерж. стали 0,04x0,03»\nТУ 14-4-507-99\n\n2 983 ₽/м² (без НДС)\n68 820 ₽ за рулон 30 м²\n[В наличии]\n\nЯчейка / проволока / AISI 304 /\nполотняное переплетение / 1000 мм\n\n[Оформить заказ] [Заказать раскрой]\n[Загрузить файл реквизитов]',
+    heroNew:'«Сетка из нерж. стали 0,04x0,03»\nТУ 14-4-507-99 · AISI 304\n\n3 580 ₽/м² (с НДС) | 2 983 ₽ (без НДС) [⇄]\nРулон 30 м² · В наличии · Отгрузка 1-3 дня\n\nЯчейка 0,04 / проволока 0,03 / саржа\nШирина 1000 мм · Длина рулона 30 м\n\nКалькулятор отмотки:\n[___] м² → стоимость + наценка + срок\n\n[Оформить заказ]  [Получить счёт ЮЛ]\n  ⓘ Загрузите ИНН — пришлём счёт за 1 ч\n\n📌 Применяют для: фильтрации воды (фильтр 40 мкм),\n   сепарации порошков, экранирования'
+  },
+  { id:'manufacturing', title:'Производство', url:'td-mc.ru/proizvodstvo/',
+    problems: [
+      {l:'c',t:'Сроки изготовления НЕ указаны. Это ключевой вопрос для индзаказа от 100 м.п. Без срока менеджер потеряет лида, у которого дедлайн критичен'},
+      {l:'h',t:'Нет фото производства / станков / процесса. «25 лет опыта + 100 000 м² продукции» голословно — нужны визуалы цеха'},
+      {l:'h',t:'Нет портфолио индзаказов: «изготовили нестандартную сетку для завода X — параметры, фото, клиент». Это снимает страх для снабженца с непривычной задачей'}
+    ],
+    before: [
+      {tag:'WEAK',label:'Вступление: 25 лет + клиентская база (без фото)',h:48,p:1},
+      {tag:'OK',label:'Расширение ассортимента (4 ТУ)',h:40},
+      {tag:'OK',label:'Двойная система контроля качества (текст)',h:40},
+      {tag:'WEAK',label:'Форма заказа без сроков и без портфолио рядом',h:60,p:1},
+      {tag:'OK',label:'Контакты',h:32}
+    ],
+    after: [
+      {tag:'HERO',label:'«Производство сеток под заказ — от 100 м.п., от 7 дней»',h:60},
+      {tag:'PROOF',label:'25 лет • 100 000 м² изготовлено • ISO 9001 • Двойной контроль ОТК',h:36},
+      {tag:'PORTFOLIO',label:'5 кейсов индзаказов: задача → параметры → срок → фото → клиент',h:80},
+      {tag:'PROC',label:'7 шагов: ТЗ → расчёт за 1 ч → договор → закупка → плетение → ОТК → отгрузка',h:64},
+      {tag:'PRICE',label:'Сроки: 100-500 м.п. — 7 дн / 500-2000 — 14 дн / 2000+ — индивидуально',h:48},
+      {tag:'TRUST',label:'Фото цеха: ткацкие станки + ОТК + склад. Сертификаты ИСО + ТУ',h:60},
+      {tag:'FAQ',label:'Можно ли с чертежом? Минимум? Максимум? Срочно? Что если не подошла?',h:40},
+      {tag:'NEXT',label:'Форма: загрузить ТЗ/чертёж + параметры + объём + дедлайн',h:48},
+      {tag:'CROSS',label:'Готовые сетки в наличии — каталог',h:32}
+    ],
+    heroNow:'«Производство»\n\n«Компания TDMC более 25 лет успешно\nпроизводит металлические сетки...»\n\n(4 ТУ → текст про двойной ОТК →\nформа без сроков → контакты)\n\nНи одного фото цеха.\nНи одного срока изготовления.\nНи одного индзаказа в портфолио.',
+    heroNew:'«Производство сеток под заказ —\nот 100 м.п., изготовление от 7 дней»\n\nТкацкие станки, ОТК с двойным контролем.\nИзготовлено 100 000 м² за 25 лет.\nНестандартные параметры: ячейка, проволока,\nширина, переплетение по чертежу/ТЗ.\n\nCTA: Загрузить ТЗ — расчёт за 1 час\nCTA: Посмотреть кейсы индзаказов'
+  },
+  { id:'delivery', title:'Доставка', url:'td-mc.ru/dostavka/',
+    problems: [
+      {l:'h',t:'Нет калькулятора стоимости доставки. Цены диапазонами «от X», но снабженцу нужна точная сумма для счёта'},
+      {l:'h',t:'Адреса самовывоза «указаны в счёте» — лишнее трение. Нужно публично: адрес, схема, телефон склада, часы (с картой)'}
+    ],
+    before: [
+      {tag:'OK',label:'3 способа: самовывоз, по Москве, по РФ',h:40},
+      {tag:'OK',label:'Цены «от 1220₽ Москва / 1320₽ область / 610₽ или бесплатно по РФ»',h:44},
+      {tag:'OK',label:'Сроки: следующий день / 1-3 дня терминал',h:36},
+      {tag:'WEAK',label:'Адреса складов «указаны в счёте» (без публичных)',h:36,p:1},
+      {tag:'WEAK',label:'Калькулятора стоимости нет',h:32,p:1}
+    ],
+    after: [
+      {tag:'HERO',label:'«Доставка по РФ и ЕАЭС за 1-3 дня. Самовывоз 2 склада»',h:48},
+      {tag:'PROOF',label:'2 склада • ПЭК / ДЛ / СДЭК • Бесплатно от 40 000₽ • До терминала',h:36},
+      {tag:'SPEC',label:'3 карточки способов с тарифами и сроками',h:60},
+      {tag:'CALC',label:'Калькулятор: город + объём → стоимость + срок',h:48},
+      {tag:'TRUST',label:'Карта 2 складов: Москва + Электросталь, адреса, схема, фото',h:64},
+      {tag:'FAQ',label:'Можно в день заказа? Что с НДС? Возврат? Брак при перевозке?',h:40},
+      {tag:'NEXT',label:'CTA: рассчитать доставку',h:36}
+    ],
+    heroNow:'«Доставка»\n\n• Самовывоз — адрес «в счёте»\n• Москва — от 1220₽\n• Область — от 1320₽\n• РФ — 610₽ или бесплатно от 40К\n\n(Без калькулятора. Без карты складов.)',
+    heroNew:'«Доставка по РФ и ЕАЭС:\nсо склада за 1-3 дня»\n\nСамовывоз: Москва (адрес+карта),\nЭлектросталь (адрес+карта).\nПЭК, Деловые линии, СДЭК.\nБесплатно по РФ от 40 000 ₽.\n\nКалькулятор: [город] + [объём] →\nточная стоимость и срок'
+  }
+];
+
+const bottlenecks = [
+  {l:'c',title:'Смешанная иерархия каталога: распутья и листинги визуально не различимы',desc:'Часть категорий 2-го уровня (латунь, рифленая, фильтровая, сварная) — это листинги с ценами. Часть (тканая нерж., цветные металлы) — распутья из 4 подкатегорий. Пользователь не видит разницы до клика. Снабженец, ожидавший таблицу типоразмеров, попадает на 4 плитки и должен сделать ещё клик. На каждом лишнем шаге сайт теряет лидов.',fix:'В каталоге у каждой плитки-категории добавить пометку: «350+ позиций в наличии — выбрать» (для листингов) vs «4 раздела — выбрать тип» (для распутий). На страницах-распутьях добавить превью «Топ-15 ходовых типоразмеров» прямо тут — чтобы посетитель не уходил на ещё один уровень.'},
+  {l:'c',title:'Срок изготовления индзаказа НЕ указан',desc:'Страница «Производство» обещает индзаказ от 100 м.п., но не говорит сроков. Дедлайн — главный фактор для снабженца на текущем закупе. Без срока он позвонит конкуренту, у которого срок указан.',fix:'На странице «Производство» — таблица: «100-500 м.п. — от 7 дней / 500-2000 — от 14 дней / 2000+ — индивидуально». Также — «Срочное производство — от 3 дней (наценка X%)» как опция.'},
+  {l:'c',title:'Нет дифференциации сегментов на главной',desc:'Снабженец, инженер-конструктор, мукомолы, импортозамещение, розница — все попадают на одну главную с 9 одинаковыми плитками. У каждого сегмента свой язык, свой первый клик, свой страх. Главная сейчас — описательная, не маршрутизирует трафик.',fix:'Блок IDENTIFY на главной: 5 путей-карточек («Снабженцу — счёт за 1 час», «Инженеру — подбор по задаче», «Мукомолам — каталог по ГОСТ», «Импортозамещение mesh», «Розница — раскрой от 1 м²»). Клик → отфильтрованный листинг + специализированная посадочная.'},
+  {l:'h',title:'Нет квиза/калькулятора подбора на главной/каталоге',desc:'9 категорий + 700+ типоразмеров — без инструмента подбора. Инженер-конструктор, не знающий точно какая ему сетка, уходит. Калькулятор отмотки есть только в карточке товара — слишком глубоко.',fix:'Квиз «Подобрать сетку за 1 минуту»: задача → среда (агрессивная/нет) → размер ячейки → объём → результат + расчёт + предложение менеджера. На главной + на каталоге. Калькулятор стоимости отмотки — поднять на уровень листингов.'},
+  {l:'h',title:'Сильные сегменты (mesh-импорт, мукомолы) спрятаны как подкатегории',desc:'«Сетки зарубежной классификации (mesh) — импортозамещение» и «Сетки для мельничных комплексов и мукомольной промышленности» — золотые сегменты с уникальной болью. Сейчас они — 3-й уровень меню. Снабженец-мукомол не найдёт их через Google.',fix:'Поднять до самостоятельных лендингов: /import-zameshchenie-mesh/ и /setki-dlya-mukomolov/. Свой H1, портфолио заводов-клиентов, ГОСТ-таблицы (mesh ↔ ячейка), форма расчёта. Сделать видимыми из главного меню или с главной.'},
+  {l:'h',title:'Слабые фильтры и нет сортировки в листингах',desc:'На странице категории-листинга со 120+ позициями фильтр только по размеру ячейки, нет фильтра по марке стали (304/316), переплетению, ширине, наличию. Нет сортировки по цене / по ячейке / популярности. Профи фильтруют именно так и страдают от пагинации без сортировки.',fix:'Добавить фильтры: марка стали, переплетение, ширина, наличие. Добавить сортировку: цена ↑↓, ячейка ↑↓, популярность. Заменить пагинацию на lazy-load или показ «50/100/все» позиций.'},
+  {l:'h',title:'Несогласованность цен «с НДС» / «без НДС»',desc:'В листинге цена показана «с НДС», в карточке товара — «без НДС». B2B-снабженец проверяет цену дважды и нервничает, частник пугается «доплатой 20%». Конверсия страдает молча.',fix:'Единый стандарт по сайту. Лучше: переключатель «с НДС / без НДС» в шапке + отображать обе цены в карточке. Для физлиц по умолчанию «с НДС», для ЮЛ — «без НДС».'},
+  {l:'h',title:'Слабое первое впечатление: H1 без позиционирования',desc:'H1 главной «Сетки из нерж. проволоки и цветных металлов» — описательный. Нет УТП, нет «почему мы», нет CTA рядом. 4 stat-бокса (700+, 2500+, R&D, индзаказ) — абстрактны.',fix:'H1: «Металлические сетки от производителя — 700+ типоразмеров в наличии, изготовление от 100 м.п.». Подзаголовок с УТП. 2 CTA: «Подобрать» / «Скачать прайс». Stat-бокса заменить на «25 лет», «ISO 9001», «Со склада 1-3 дня», «От 500 ₽/м²».'},
+  {l:'h',title:'Производство — текст вместо доказательств',desc:'Страница производства голословна: 25 лет, 100 000 м², двойной ОТК — но ни одного фото цеха, ни одного индзаказа в портфолио, ни одного клиента-завода. Снабженец заводов так не покупает.',fix:'Фото цеха (станки, рулоны, ОТК), 5-7 кейсов индзаказов (задача → параметры → срок → фото → имя клиента/отрасль), сертификаты ISO + ТУ. Подложка под доверием.'},
+  {l:'h',title:'Отзывы есть, но без атрибуции и веса',desc:'50+ отзывов на сайте — отлично. НО: в формате «Denis PK Nemo • 5 звёзд • 1 предложение». Без названий компаний, без отрасли, без проектов. Для B2B такие отзывы слабее, чем 5 хороших с реквизитами компании-клиента.',fix:'Собрать у топ-20 клиентов «отзыв-кейс»: компания, отрасль, что заказывали, как часто, оценка работы менеджера. На главной + на категориях разместить блок «Нам доверяют» с логотипами и текстовыми отзывами с реквизитами.'}
+];
+
+const compLib = [
+  ['HERO','Первый экран','Позиционирование + главный CTA. H1 повторяет поисковый интент. 2 CTA: подбор / прайс.'],
+  ['PROOF','Полоса доверия','25 лет • ISO 9001 • Со склада 1-3 дня • от 500₽/м² • AISI 304/316. Под Hero на каждой ключевой странице.'],
+  ['ID','Идентификация','Блок «вы кто»: снабженец / инженер / мукомолы / импортозамещение / розница. Клик — свой маршрут.'],
+  ['QUIZ','Квиз подбора','3-5 вопросов: задача → материал → ячейка → объём → расчёт + рекомендация менеджера.'],
+  ['CATALOG','Карточки категорий','С пометкой «листинг» / «распутье», ценой «от» и количеством позиций.'],
+  ['TABLE','Таблица типоразмеров','Артикул/ГОСТ | ячейка | проволока | марка | цена/м² | наличие | в корзину. С фильтрами и сортировкой.'],
+  ['CARD','Карточка товара','Цена с НДС/без НДС, наличие, калькулятор отмотки, применение, альтернативы по ЗАДАЧЕ.'],
+  ['CALC','Калькулятор','Длина × ширина × цена + наценка отмотки + доставка → точная стоимость и срок.'],
+  ['SPEC','Характеристики','Ячейка, проволока, ГОСТ, марка стали, переплетение, ширина, длина рулона.'],
+  ['PORTFOLIO','Кейсы и портфолио','Заводы-клиенты + индзаказы: задача → параметры → срок → фото → отрасль.'],
+  ['PRICE','Прозрачные цены','Цены «от X₽/м²» в hero. Прайс на email без регистрации. С НДС / без НДС последовательно.'],
+  ['TRUST','Снятие рисков','Сертификаты ISO/ГОСТ/ТУ + фото цеха + отзывы с реквизитами + контакт специалиста.'],
+  ['PROC','Процесс заказа','Запрос → расчёт за 1 ч → счёт → оплата → отгрузка 1-3 дня (или произв-во 7-14 дней).'],
+  ['FILTER','Фильтры каталога','По применению (фильтр/просев/декор), по материалу, ячейке, проволоке, ГОСТу, наличию, ширине.'],
+  ['FAQ','Частые вопросы','Цена, мин. партия, сроки, документы (НДС, паспорта качества), отмотка, возврат, доставка.'],
+  ['NEXT','Следующий шаг','Форма: артикул/ГОСТ/ТЗ + объём + телефон. SLA «расчёт за 1 час» рядом с кнопкой.'],
+  ['CROSS','Кросс-продажа','Альтернативы по ЗАДАЧЕ: «то же фильтр 50 мкм, но дешевле / 316», а не просто похожая ячейка.']
+];
+
+function makeTag(type) {
+  const c = COMP_COLORS[type] || '#6b6b8a';
+  return `<span class="tag" style="color:${c};background:${c}18">${type}</span>`;
+}
+
+function makeSev(l) {
+  const m = {c:['sev-c','КРИТ'],h:['sev-h','ВЫСОК'],m:['sev-m','СРЕДН']};
+  const [cls,label] = m[l]||['','—'];
+  return `<span class="sev ${cls}">${label}</span>`;
+}
+
+function makeWfBlock(b) {
+  const c = COMP_COLORS[b.tag] || '#6b6b8a';
+  const isProblem = b.p;
+  const bg = isProblem ? 'var(--redD)' : (c+'0a');
+  const border = isProblem ? 'rgba(248,113,113,.3)' : (c+'30');
+  return `<div class="wf-block${isProblem?' problem-block':''}" style="height:${b.h||48}px;background:${bg};border:1px solid ${border};border-left:3px solid ${isProblem?'var(--red)':c}">
+    ${b.tag ? makeTag(b.tag) : ''}
+    <span class="label">${b.label}</span>
+    ${isProblem ? '<span class="warn">!</span>' : ''}
+  </div>`;
+}
+
+function makeWire(blocks, title) {
+  return `<div class="wire">
+    <div class="wire-title">${title}</div>
+    <div class="wire-frame">
+      <div class="wire-chrome">
+        <div class="dot" style="background:#ef4444"></div>
+        <div class="dot" style="background:#fbbf24"></div>
+        <div class="dot" style="background:#22c55e"></div>
+        <div class="wire-bar"></div>
+      </div>
+      ${blocks.map(makeWfBlock).join('')}
+    </div>
+  </div>`;
+}
+
+let activePage = 'home';
+let heroView = 'now';
+
+function renderPages() {
+  const el = document.getElementById('t-pages');
+  const p = pages.find(x=>x.id===activePage);
+  el.innerHTML = `
+    <div class="page-btns">${pages.map(pg=>`<button class="page-btn${pg.id===activePage?' active':''}" data-pg="${pg.id}">${pg.title} <span style="opacity:.5">(${pg.problems.length})</span></button>`).join('')}</div>
+    <div class="url-bar mono">https://${p.url} <a href="https://${p.url}" target="_blank" style="color:var(--accent);text-decoration:none;margin-left:8px">открыть</a></div>
+    <div class="screenshot-wrap" style="margin-bottom:16px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--card)">
+      <div style="padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
+        <div class="dot" style="background:#ef4444"></div><div class="dot" style="background:#fbbf24"></div><div class="dot" style="background:#22c55e"></div>
+        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-left:4px">https://${p.url}</span>
+      </div>
+      <div style="position:relative;min-height:200px;background:#1a1a24">
+        <img
+          src="https://image.thum.io/get/width/1200/crop/700/https://${p.url}"
+          alt="Скриншот ${p.title}"
+          style="width:100%;display:block;opacity:0;transition:opacity .5s"
+          onload="this.style.opacity=1;this.nextElementSibling.style.display='none'"
+          onerror="this.style.display='none';this.nextElementSibling.innerHTML='<div style=padding:40px;text-align:center;color:#6b6b8a>Скриншот не загрузился. <a href=https://${p.url} target=_blank style=color:#818cf8>Открыть сайт</a></div>'"
+        />
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center">
+          <div style="color:var(--muted);font-size:12px">Загрузка скриншота...</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:14px;font-weight:800;color:var(--red);margin-bottom:8px">Почему может не конвертить</div>
+    ${p.problems.map(pr=>`<div class="problem">${makeSev(pr.l)}<span class="text">${pr.t}</span></div>`).join('')}
+    <div class="wires">
+      ${makeWire(p.before,'Как сейчас')}
+      ${makeWire(p.after,'Новая структура')}
+    </div>
+    <div class="hero-cmp">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">СРАВНЕНИЕ HERO-БЛОКА</div>
+      <div class="hero-btns">
+        <button class="hero-btn ${heroView==='now'?'active-now':''}" data-hv="now">HERO сейчас</button>
+        <button class="hero-btn ${heroView==='new'?'active-new':''}" data-hv="new">HERO предложение</button>
+      </div>
+      <div class="hero-text mono ${heroView==='now'?'hero-text-now':'hero-text-new'}">${heroView==='now'?p.heroNow:p.heroNew}</div>
+    </div>
+  `;
+  el.querySelectorAll('.page-btn').forEach(btn=>{
+    btn.onclick = ()=>{ activePage=btn.dataset.pg; heroView='now'; renderPages(); };
+  });
+  el.querySelectorAll('.hero-btn').forEach(btn=>{
+    btn.onclick = ()=>{ heroView=btn.dataset.hv; renderPages(); };
+  });
+}
+
+function renderBn() {
+  document.getElementById('t-bn').innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:16px">Узкие горлышки — приоритизированный список</div>
+    ${bottlenecks.map((b,i)=>`<div class="bn-item">
+      <div class="bn-num">${i+1}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">${makeSev(b.l)}<span class="bn-title">${b.title}</span></div>
+        <div class="bn-desc">${b.desc}</div>
+        <div class="bn-fix"><strong>Решение:</strong> ${b.fix}</div>
+      </div>
+    </div>`).join('')}`;
+}
+
+function renderTodo() {
+  const quick = [
+    ['В карточках категорий: пометка «листинг с ценами» vs «4 раздела» + цена «от»','Каталог','1 день','+15-25% точность кликов','green'],
+    ['Унифицировать «с НДС / без НДС» (toggle в шапке)','Все','1 день','снять смущение','green'],
+    ['H1 + 2 CTA на главной с позиционированием','Главная','1 день','+20-30% глубина','green'],
+    ['Указать сроки изготовления индзаказа таблицей','Производство','4 часа','снять страх','green'],
+    ['Опубликовать адреса 2 складов + карта + фото','Доставка','1 день','+10% самовывоз','green'],
+    ['SLA «расчёт за 1 час» рядом с формами','Все','2 часа','+10-15% заявок','green'],
+    ['Заменить 4 stat-бокса на 4 ценностных факта','Главная','3 часа','усилить hero','green'],
+    ['Сортировка в листинге: цена ↑↓, ячейка ↑↓, популярные','Категории','1-2 дня','UX каталога','green'],
+    ['Объяснить «зачем загружать реквизиты» в карточке товара','Карточка','2 часа','снять барьер','green']
+  ];
+  const struct = [
+    ['Расширить фильтры в листингах: марка, переплетение, ширина, наличие','Категории','5-7 дн','UX каталога','orange'],
+    ['Топ-15 ходовых SKU прямо на странице-распутье (тканая нерж., цв.мет.)','Распутья','5-7 дн','-1 клик до покупки','orange'],
+    ['Блок IDENTIFY на главной: 5 путей-сегментов','Главная','3-5 дн','+15-25% точность','orange'],
+    ['Квиз подбора сетки + калькулятор стоимости на главной/каталоге','Главная, кат.','7-10 дн','+20-30% лиды','orange'],
+    ['Лендинги: /import-zameshchenie-mesh/, /setki-dlya-mukomolov/','SEO','7-14 дн','новый трафик','orange'],
+    ['Калькулятор доставки: город + объём → цена/срок','Доставка','3-5 дн','снять трение','orange'],
+    ['Кейсы индзаказов на странице «Производство»','Произв-во','5-7 дн','+20-30% B2B-доверие','orange'],
+    ['Cross-sell в карточке по ЗАДАЧЕ, а не по размеру ячейки','Карточка','5-7 дн','+10-15% AOV','orange'],
+    ['Блок «Нам доверяют»: логотипы + отзывы с реквизитами','Главная, кат.','3-5 дн','+10-15% доверие','orange'],
+    ['Раздел «Применения» в карточке: «эту ячейку берут для X/Y/Z»','Карточка','3-5 дн','помощь новичкам','orange']
+  ];
+  const content = [
+    'Список топ-30 ходовых типоразмеров с ценами и наличием — для блока на главной и распутьях',
+    '5-7 кейсов индзаказов: задача клиента → параметры сетки → срок → фото → отрасль/имя клиента',
+    'Фото производства: ткацкие станки в работе, ОТК, склад с рулонами, упаковка',
+    '20-30 логотипов клиентов-заводов (B2B-доверие на главной)',
+    '10-15 «отзывов-кейсов» от клиентов с реквизитами и проектами',
+    'Адреса 2 складов: фото входа, схема проезда, телефон, часы работы',
+    'Список зарубежных mesh-классификаций → ГОСТ-аналог (для лендинга импортозамещения)',
+    'Для топ-50 SKU — описание «применяют для X/Y/Z» (для блока в карточке)'
+  ];
+  document.getElementById('t-todo').innerHTML = `
+    <div class="section-title" style="color:var(--green)">Быстрые правки (1-3 дня)</div>
+    ${quick.map(f=>`<div class="todo-row"><span class="what">${f[0]}</span><span style="color:var(--muted)">${f[1]}</span><span style="color:var(--cyan)">${f[2]}</span><span style="color:var(--${f[4]});font-weight:700">${f[3]}</span></div>`).join('')}
+    <div class="section-title" style="color:var(--orange);margin-top:24px">Структурные изменения (1-2 недели)</div>
+    ${struct.map(f=>`<div class="todo-row"><span class="what">${f[0]}</span><span style="color:var(--muted)">${f[1]}</span><span style="color:var(--cyan)">${f[2]}</span><span style="color:var(--${f[4]});font-weight:700">${f[3]}</span></div>`).join('')}
+    <div class="section-title" style="color:var(--purple);margin-top:24px">Контент (участие клиента)</div>
+    ${content.map((t,i)=>`<div class="content-task"><span class="num">${i+1}</span><span>${t}</span></div>`).join('')}`;
+}
+
+function renderLib() {
+  document.getElementById('t-lib').innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px">Библиотека конверсионных компонентов</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Стандартизированные блоки для сборки каждой страницы. Адаптировано под B2B-метизы с e-commerce.</div>
+    <div class="comp-grid">${compLib.map(([tag,title,desc])=>{
+      const c = COMP_COLORS[tag]||'#6b6b8a';
+      return `<div class="comp-card" style="border-left:3px solid ${c}">
+        ${makeTag(tag)}
+        <div class="title">${title}</div>
+        <div class="desc">${desc}</div>
+      </div>`;
+    }).join('')}</div>`;
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const id = tab.dataset.tab;
+    ['overview','pages','bn','todo','lib'].forEach(t=>{
+      document.getElementById('t-'+t).classList.toggle('hidden', t!==id);
+    });
+    if(id==='pages') renderPages();
+    if(id==='bn') renderBn();
+    if(id==='todo') renderTodo();
+    if(id==='lib') renderLib();
+  };
+});
+
+renderPages(); renderBn(); renderTodo(); renderLib();
+</script>
+</body>
+</html>
